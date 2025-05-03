@@ -3,6 +3,17 @@ import numpy as np
 from typing import Tuple
 from dataclasses import dataclass
 
+COARSE_X_INC   = 6
+COARSE_X_START = -42
+COARSE_X_END   = 42
+
+COARSE_Y_INC   = 5
+COARSE_Y_START = -30
+COARSE_Y_END   = 30
+
+COARSE_Z_INC   = 6
+COARSE_Z_START = -50
+COARSE_Z_END   = 60
 
 @dataclass
 class RotationSearchSpace:
