@@ -27,7 +27,7 @@ def isolate_ball(
         print("[isolate_ball] Ball parameters missing, running HoughCircles...")
         circles = cv2.HoughCircles(
             img, cv2.HOUGH_GRADIENT, dp=1.2, minDist=50,
-            param1=100, param2=30, minRadius=70, maxRadius=150
+            param1=100, param2=30, minRadius=40, maxRadius=70
         )
         if circles is not None:
             circles = np.round(circles[0, :]).astype("int")
