@@ -15,7 +15,7 @@ def convert_to_canny(image_path):
     
     return edges
 
-image_path = "/home/vglalala/GCFive/Images/spin_ball_1_gray_image1.png"
+image_path = "/home/vglalala/GCFive/Images/log_cam2_last_strobed_img.png"
 canny_image = convert_to_canny(image_path)
 config_path = "/home/vglalala/GCFive/detection.json"
 original_img = cv2.imread(image_path)
@@ -67,18 +67,27 @@ def run_hough_with_radius(radius):
                                minRadius=radius - 5, 
                                maxRadius=radius + 5)
 
+    box_coords = []
     if circles is not None:
         circles = np.round(circles[0, :]).astype("int")
         # Sort circles by x-coordinate to label them from left to right
         circles = sorted(circles, key=lambda c: c[0])
         for idx, (x, y, r) in enumerate(circles):
-            cv2.circle(display_img, (x, y), r, (0, 255, 0), 2)
-            cv2.rectangle(display_img, (x - 2, y - 2), (x + 2, y + 2), (0, 0, 255), -1)
-            # Label the circle with its index
+            # Calculate the top-left and bottom-right points of the bounding box
+            top_left = (x - r, y - r)
+            bottom_right = (x + r, y + r)
+            box_coords.append((top_left, bottom_right))
+            # Draw the rectangle around the detected circle
+            cv2.rectangle(display_img, top_left, bottom_right, (0, 255, 0), 2)
+            # Label the rectangle with its index
             cv2.putText(display_img, str(idx + 1), (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+            # Print the coordinates of the bounding box
+            print(f"Circle {idx + 1}: Top-left {top_left}, Bottom-right {bottom_right}")
         print(f"Detected {len(circles)} circle(s).")
     else:
         print("No circles detected.")
+    
+    return box_coords
 
 def click_event(event, x, y, flags, param):
     global points
@@ -95,7 +104,8 @@ def click_event(event, x, y, flags, param):
             with open(config_path, 'w') as f:
                 json.dump({"radius": radius}, f, indent=4)
 
-            run_hough_with_radius(radius)
+            box_coords = run_hough_with_radius(radius)
+            print("Bounding box coordinates:", box_coords)
             cv2.imshow("Manual + Hough Detection", display_img)
 
 # --- Main Entry ---
@@ -118,7 +128,8 @@ elif mode == "2":
             radius = config.get("radius")
             if radius:
                 print(f"Using radius from config: {radius}px")
-                run_hough_with_radius(radius)
+                box_coords = run_hough_with_radius(radius)
+                print("Bounding box coordinates:", box_coords)
                 cv2.imshow("Config-based Hough Detection", display_img)
                 cv2.waitKey(0)
                 cv2.destroyAllWindows()
