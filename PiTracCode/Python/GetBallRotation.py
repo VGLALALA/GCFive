@@ -33,7 +33,6 @@ class GolfBall:
     y: float
     measured_radius_pixels: float
     angles_camera_ortho_perspective: Tuple[float,float,float]
-    # add other fields you need: ball_circle_, etc.
 
 def get_ball_rotation(
     full_gray_image1: np.ndarray,
