@@ -13,7 +13,7 @@ from CompareRotationImage import compare_rotation_image
 from matchBallSize import match_ball_image_sizes
 from GenerateRotationCandidate import RotationSearchSpace
 from GolfBall import GolfBall
-
+from ROI import run_hough_with_radius
 
 COARSE_X_INC   = 6
 COARSE_X_START = -42
@@ -42,26 +42,27 @@ def get_ball_rotation(
     """
     print("Step 1")
     # 1) Isolate each ball into its own tight crop
-    ball_image1, local_ball1 = isolate_ball(full_gray_image1, ball1)
-    ball_image2, local_ball2 = isolate_ball(full_gray_image2, ball2)
+    ball_image1, local_ball1 = run_hough_with_radius(full_gray_image1, ball1)
+    ball_image2, local_ball2 = run_hough_with_radius(full_gray_image2, ball2)
     print("test 1")
-    # --- TEST: Show original and isolated images for both balls ---
-    cv2.imshow("Original Image 1", full_gray_image1)
-    cv2.imshow("Isolated Ball 1", ball_image1)
-    cv2.imshow("Original Image 2", full_gray_image2)
-    cv2.imshow("Isolated Ball 2", ball_image2)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    # Show the isolated balls
+    cv2.imshow("Ball 1", ball_image1)
+    cv2.imshow("Ball 2", ball_image2)
+    cv2.waitKey(1)
+
     # --- END TEST ---
     print("step 2")
     # 2) Resize so both crops are the same size
     ball_image1, ball_image2, local_ball1, local_ball2 = \
         match_ball_image_sizes(ball_image1, ball_image2, local_ball1, local_ball2)
-
+    cv2.imshow("Ball 1", ball_image1)
+    cv2.imshow("Ball 2", ball_image2)
+    cv2.waitKey(1)
+    print("step 3")
     # 3) Apply Gabor filters to pick out dimple edges
     edges1 = apply_gabor_filter_to_ball(ball_image1, local_ball1)
     edges2 = apply_gabor_filter_to_ball(ball_image2, local_ball2)
-
+    print("step 4")
     # 4) Remove specular reflections
     remove_reflections(ball_image1, edges1)
     remove_reflections(ball_image2, edges2)
@@ -112,22 +113,3 @@ def get_ball_rotation(
 
     return (norm_x, norm_y, norm_z)
 
-
-if __name__ == "__main__":
-    # Example test for get_ball_rotation with full auto-detection
-    import sys
-    img1_path = r"C:\Users\theka\Downloads\GCFive\Images\gs_log_img__log_ball_final_found_ball_img.png"
-    img2_path = r"C:\Users\theka\Downloads\GCFive\Images\log_cam2_last_strobed_img.png"  # Use a different image if available
-    img1 = cv2.imread(img1_path, cv2.IMREAD_GRAYSCALE)
-    img2 = cv2.imread(img2_path, cv2.IMREAD_GRAYSCALE)
-    if img1 is None or img2 is None:
-        print("Error: Could not load one or both images.")
-        sys.exit(1)
-
-    # Create GolfBall objects with zeros for auto-detection
-    ball1 = GolfBall(x=0, y=0, measured_radius_pixels=0, angles_camera_ortho_perspective=(0.0, 0.0, 0.0))
-    ball2 = GolfBall(x=0, y=0, measured_radius_pixels=0, angles_camera_ortho_perspective=(0.0, 0.0, 0.0))
-
-    print("Running get_ball_rotation test with auto-detection...")
-    result = get_ball_rotation(img1, ball1, img2, ball2)
-    print(f"Result (spin_x, spin_y, spin_z): {result}")
