@@ -74,12 +74,17 @@ def get_ball_rotation(
     cv2.imshow("Gabor Edges 2 (clean)", edge2_clean)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-    time.sleep(10222)
-    print("step 4")
-    # 4) Remove specular reflections
-    remove_reflections(ball_image1, edges1)
-    remove_reflections(ball_image2, edges2)
 
+    print("step 4")
+
+    # 4) Remove specular reflections
+    gaberRefRemoved1 = remove_reflections(ball_image1, edge1_clean)
+    gaberRefRemoved2 = remove_reflections(ball_image2, edge2_clean)
+    cv2.imshow("Gabor Edges 1 (clean)", gaberRefRemoved1)
+    cv2.imshow("Gabor Edges 2 (clean)", gaberRefRemoved2)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    time.sleep(10222)
     # 5) Mask out everything outside the ball's circle
     FINAL_MASK_FACTOR = 0.92
     edges1 = mask_area_outside_ball(edges1, local_ball1, FINAL_MASK_FACTOR, ignore_value=128)

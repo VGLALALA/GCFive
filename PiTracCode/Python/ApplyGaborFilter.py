@@ -148,7 +148,7 @@ def apply_gabor_filter_image(image_gray: np.ndarray) -> np.ndarray:
     pos_gamma  = 4
     pos_th     = 60
     pos_psi    = 27
-    binary_threshold = 12
+    binary_threshold = 15
 
     # Compute derived params
     sigma = pos_sigma / 2.0
