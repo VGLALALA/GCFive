@@ -3,6 +3,14 @@ import numpy as np
 from typing import Tuple
 from dataclasses import dataclass
 from GolfBall import GolfBall
+from IsolateCode import isolate_ball
+from ApplyGaborFilter import apply_gabor_filter_to_ball
+from RemoveReflection import remove_reflections
+from MaskAreaOutsideBall import mask_area_outside_ball
+from GetRotatedImage import get_rotated_image
+from GenerateRotationCandidate import generate_rotation_candidates
+from CompareRotationImage import compare_rotation_image
+from matchBallSize import match_ball_image_sizes
 
 
 COARSE_X_INC   = 6
@@ -50,8 +58,8 @@ def get_ball_rotation(
         match_ball_image_sizes(ball_image1, ball_image2, local_ball1, local_ball2)
 
     # 3) Apply Gabor filters to pick out dimple edges
-    edges1 = apply_gabor_filter(ball_image1, local_ball1)
-    edges2 = apply_gabor_filter(ball_image2, local_ball2)
+    edges1 = apply_gabor_filter_to_ball(ball_image1, local_ball1)
+    edges2 = apply_gabor_filter_to_ball(ball_image2, local_ball2)
 
     # 4) Remove specular reflections
     remove_reflections(ball_image1, edges1)
@@ -77,14 +85,14 @@ def get_ball_rotation(
         y_start=COARSE_Y_START, y_end=COARSE_Y_END, y_inc=COARSE_Y_INC,
         z_start=COARSE_Z_START, z_end=COARSE_Z_END, z_inc=COARSE_Z_INC,
     )
-    candidates = compute_candidate_angle_images(edges1, coarse_space, local_ball1)
-    best_idx = compare_candidate_angle_images(edges2, candidates)
+    candidates = generate_rotation_candidates(edges1, coarse_space, local_ball1)
+    best_idx = compare_rotation_image(edges2, candidates)
     best_coarse = candidates[best_idx]
 
     # 8) Fine-search around that best candidate
     fine_space = best_coarse.make_refined_search_space()
-    final_candidates = compute_candidate_angle_images(edges1, fine_space, local_ball1)
-    best_idx = compare_candidate_angle_images(edges2, final_candidates)
+    final_candidates = generate_rotation_candidates(edges1, fine_space, local_ball1)
+    best_idx = compare_rotation_image(edges2, final_candidates)
     best_final = final_candidates[best_idx]
 
     # 9) Normalize to real-world spin axes
