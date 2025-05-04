@@ -132,3 +132,33 @@ def apply_gabor_filter_to_ball(image_gray: np.ndarray,
                 break
 
     return dimple_edges, calibrated_threshold
+
+
+def apply_gabor_filter_image(image_gray: np.ndarray) -> np.ndarray:
+    """
+    Takes a grayscale image and returns the Gabor-filtered binary edge image.
+    """
+    # Convert to float32 [0,1]
+    img_f32 = image_gray.astype(np.float32) / 255.0
+
+    # Default Gabor parameters (non-equalized branch)
+    kernel_size = 21
+    pos_sigma  = 2
+    pos_lambda = 6
+    pos_gamma  = 4
+    pos_th     = 60
+    pos_psi    = 27
+    binary_threshold = 8.5
+
+    # Compute derived params
+    sigma = pos_sigma / 2.0
+    lambd = float(pos_lambda)
+    theta = float(pos_th) * 2.0
+    psi   = float(pos_psi) * 10.0
+    gamma = pos_gamma / 20.0
+
+    # First Gabor pass
+    dimple_edges, _ = apply_test_gabor_filter(
+        img_f32, kernel_size, sigma, lambd, theta, psi, gamma, binary_threshold
+    )
+    return dimple_edges

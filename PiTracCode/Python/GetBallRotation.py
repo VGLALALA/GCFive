@@ -58,14 +58,13 @@ def get_ball_rotation(
     cv2.imshow("Ball 1", ball_image1)
     cv2.imshow("Ball 2", ball_image2)
     cv2.waitKey(1)
-    time.sleep(10222)
 
     print("step 3")
     ball_image1, ball_image2, local_ball1, local_ball2 = \
         match_ball_image_sizes(ball_image1, ball_image2, local_ball1, local_ball2)  #Working
     # 3) Apply Gabor filters to pick out dimple edges
-    edges1 = apply_gabor_filter_to_ball(ball_image1, local_ball1)
-    edges2 = apply_gabor_filter_to_ball(ball_image2, local_ball2)
+    gaborImage1 = apply_gabor_filter_to_ball(ball_image1, local_ball1)
+    gaborImage2 = apply_gabor_filter_to_ball(ball_image2, local_ball2)
     print("step 4")
     # 4) Remove specular reflections
     remove_reflections(ball_image1, edges1)
