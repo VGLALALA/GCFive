@@ -1,9 +1,9 @@
 import numpy as np
-
+from GolfBall import GolfBall
 def unproject_3d_ball_to_2d_image(
     src3d: np.ndarray,
     destination_image_gray: np.ndarray,
-    ball: “GolfBall”  # your Python GolfBall class, not used here but kept for API parity
+    ball: GolfBall  # your Python GolfBall class, not used here but kept for API parity
 ) -> None:
     """
     Copy the second channel from a (rows×cols×2) int32 src3d array back into the

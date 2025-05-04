@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 from typing import Tuple
-
+from GolfBall import GolfBall
 def match_ball_image_sizes(
     img1: np.ndarray,
     img2: np.ndarray,

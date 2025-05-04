@@ -1,13 +1,14 @@
 import numpy as np
 import math
 from typing import Tuple
-
+from GolfBall import GolfBall
+from ProjectionOp import ProjectionOp
 # Match your C++ ignore value
 K_PIXEL_IGNORE_VALUE = 128
 
 def project_to_3d_ball(
     image_gray: np.ndarray,
-    ball: “GolfBall”,                       # your Python GolfBall class
+    ball: GolfBall,                       # your Python GolfBall class
     rotation_angles_deg: Tuple[int, int, int]
 ) -> np.ndarray:
     """
