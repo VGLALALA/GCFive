@@ -27,12 +27,7 @@ class RotationSearchSpace:
     z_start: int
     z_end: int
 
-@dataclass
-class GolfBall:
-    x: float
-    y: float
-    measured_radius_pixels: float
-    angles_camera_ortho_perspective: Tuple[float,float,float]
+
 
 def get_ball_rotation(
     full_gray_image1: np.ndarray,

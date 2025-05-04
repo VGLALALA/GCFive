@@ -26,7 +26,7 @@ class RotationSearchSpace:
 def generate_rotation_candidates(
     base_dimple_image: np.ndarray,
     search_space: RotationSearchSpace,
-    ball: “GolfBall”  # your existing Python GolfBall class
+    ball: GolfBall  # your existing Python GolfBall class
 ) -> Tuple[
     List[RotationCandidate],
     np.ndarray,

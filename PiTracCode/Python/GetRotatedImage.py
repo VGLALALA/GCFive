@@ -2,7 +2,7 @@ import numpy as np
 
 def get_rotated_image(
     gray_2d_input_image: np.ndarray,
-    ball: “GolfBall”,         # your Python GolfBall class
+    ball: GolfBall,         # your Python GolfBall class
     rotation: Tuple[int,int,int]
 ) -> np.ndarray:
     """
