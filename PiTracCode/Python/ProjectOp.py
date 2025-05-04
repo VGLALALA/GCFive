@@ -1,23 +1,26 @@
 import math
+from typing import Tuple
+
 K_PIXEL_IGNORE_VALUE = 128
+
 class ProjectionOp:
-    def __init__(self, ball, projected_img, rotation_angles_degrees):
+    def __init__(self, ball, projected_img, rotation: Tuple[int, int, int]):
         """
         ball: an object with attributes
             - measured_radius_pixels: float
             - x: float   (ball center column)
             - y: float   (ball center row)
         projected_img: numpy array of shape (rows, cols, 2), dtype=int32
-        rotation_angles_degrees: (angle_x, angle_y, angle_z)
+        rotation: (angle_x, angle_y, angle_z)
         """
         self.ball = ball
         self.proj = projected_img
 
         # Convert to radians (note the negative on X to match your C++ code)
-        ax, ay, az = rotation_angles_degrees
+        ax, ay, az = rotation
         self.x_rad = -math.radians(ax)
-        self.y_rad =  math.radians(ay)
-        self.z_rad =  math.radians(az)
+        self.y_rad = math.radians(ay)
+        self.z_rad = math.radians(az)
 
         # Precompute sines / cosines
         self.sinX, self.cosX = math.sin(self.x_rad), math.cos(self.x_rad)
@@ -43,7 +46,7 @@ class ProjectionOp:
         if abs(dx) > r or abs(dy) > r:
             return dx, dy, 0.0
 
-        diff = r*r - (dx*dx + dy*dy)
+        diff = r * r - (dx * dx + dy * dy)
         if diff <= 0:
             return dx, dy, 0.0
 
@@ -62,15 +65,15 @@ class ProjectionOp:
 
         # 2) apply X‐axis rotation (around horizontal axis)
         if self.rotX:
-            dy, dz = dy*self.cosX - dz*self.sinX, dy*self.sinX + dz*self.cosX
+            dy, dz = dy * self.cosX - dz * self.sinX, dy * self.sinX + dz * self.cosX
 
         # 3) apply Y‐axis rotation (around vertical axis)
         if self.rotY:
-            dx, dz = dx*self.cosY + dz*self.sinY, dz*self.cosY - dx*self.sinY
+            dx, dz = dx * self.cosY + dz * self.sinY, dz * self.cosY - dx * self.sinY
 
         # 4) apply Z‐axis rotation (in‐plane)
         if self.rotZ:
-            dx, dy = dx*self.cosZ - dy*self.sinZ, dx*self.sinZ + dy*self.cosZ
+            dx, dy = dx * self.cosZ - dy * self.sinZ, dx * self.sinZ + dy * self.cosZ
 
         # 5) map back to image coords
         new_col = dx + self.ball.x
@@ -78,7 +81,7 @@ class ProjectionOp:
 
         # only write if it lands inside the image and still on front hemisphere
         rows, cols = self.proj.shape[:2]
-        if (0 <= new_col < cols and 0 <= new_row < rows and dz > 0):
+        if 0 <= new_col < cols and 0 <= new_row < rows and dz > 0:
             rc = int(new_col + 0.5)
             rr = int(new_row + 0.5)
             self.proj[rr, rc, 0] = int(dz)

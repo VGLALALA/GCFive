@@ -1,7 +1,6 @@
 import numpy as np
-import math
-
 from ProjectOp import ProjectionOp
+
 K_PIXEL_IGNORE_VALUE = 128
 def project_2d_image_to_3d_ball(image_gray, ball, rotation_angles_degrees):
     """

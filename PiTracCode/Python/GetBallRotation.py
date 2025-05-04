@@ -29,10 +29,6 @@ COARSE_Z_INC   = 6
 COARSE_Z_START = -50
 COARSE_Z_END   = 60
 
-
-
-
-
 def get_ball_rotation(
     full_gray_image: np.ndarray,
 ) -> Tuple[float,float,float]:
@@ -98,17 +94,27 @@ def get_ball_rotation(
     print("step 6")
     offset1 = np.array(best_ball1.angles_camera_ortho_perspective[:2], dtype=np.float32)
     offset2 = np.array(best_ball2.angles_camera_ortho_perspective[:2], dtype=np.float32)
-    delta = (offset2 - offset1) * 0.5
-    delta[1] *= -1  # match your C++ sign convention
-    print(offset1,offset2,delta)
-    
+    # Compute half-perspective offset in X/Y and pad Z-axis rotation with zero
+    delta_float = (offset2 - offset1) / 2.0
+    delta_float[1] *= -1.0  # Account for how our rotations are signed
+    delta2d = np.round(delta_float).astype(int)
+    delta = np.array([delta2d[0], delta2d[1], 0], dtype=int)
+
     unrotatedBallImg1DimpleEdges = gaberRefRemoved1.copy()
+    get_rotated_image(unrotatedBallImg1DimpleEdges, best_ball1, tuple(delta))
+    print(f"Adjusting rotation for camera view of ball 1 to offset (x,y,z)={delta[0]},{delta[1]},{delta[2]}")
+
+    # Compute remaining offset, invert Y sign, and pad Z-axis with zero
+    delta2d = np.round(-(offset2 - offset1 - delta_float)).astype(int)
+    delta2d[1] = -delta2d[1]
+    delta2 = np.array([delta2d[0], delta2d[1], 0], dtype=int)
+
     unrotatedBallImg2DimpleEdges = gaberRefRemoved2.copy()
+    get_rotated_image(unrotatedBallImg2DimpleEdges, best_ball2, tuple(delta2))
+    print(f"Adjusting rotation for camera view of ball 2 to offset (x,y,z)={delta2[0]},{delta2[1]},{delta2[2]}")
     
-    edges1 = get_rotated_image(unrotatedBallImg1DimpleEdges, best_ball1, tuple(delta.astype(int)))
-    edges2 = get_rotated_image(unrotatedBallImg2DimpleEdges, best_ball2, tuple((-delta).astype(int)))
-    cv2.imshow("Edges 1", edges1)
-    cv2.imshow("Edges 2", edges2)
+    cv2.imshow("Final perspective-de-rotated filtered ball_image1DimpleEdges", unrotatedBallImg1DimpleEdges)
+    cv2.imshow("Final perspective-de-rotated filtered ball_image2DimpleEdges", unrotatedBallImg2DimpleEdges)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
