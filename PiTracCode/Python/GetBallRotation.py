@@ -34,23 +34,19 @@ COARSE_Z_END   = 60
 
 
 def get_ball_rotation(
-    full_gray_image1: np.ndarray,
-    ball1: GolfBall,
-    full_gray_image2: np.ndarray,
-    ball2: GolfBall,
+    full_gray_image: np.ndarray,
 ) -> Tuple[float,float,float]:
     """
     Returns (spin_x, spin_y, spin_z) in degrees, corresponding to side-, back-, and axial-spin.
     """
     print("Step 1")
     # 1) Isolate each ball into its own tight crop
-    best_ball1 = run_hough_with_radius(full_gray_image1)
-    best_ball2 = run_hough_with_radius(full_gray_image2)
+    best_ball1,best_ball2 = run_hough_with_radius(full_gray_image)
     print("test 1")
 
     # Show the isolated balls
-    ball_image1 = isolate_ball(full_gray_image1, best_ball1)
-    ball_image2 = isolate_ball(full_gray_image2, best_ball2)
+    ball_image1 = isolate_ball(full_gray_image, best_ball1)
+    ball_image2 = isolate_ball(full_gray_image, best_ball2)
     # Update the center coordinates of best_ball1 and best_ball2
     best_ball1.x = ball_image1.shape[1] // 2
     best_ball1.y = ball_image1.shape[0] // 2
@@ -90,22 +86,31 @@ def get_ball_rotation(
     # 5) Mask out everything outside the ball's circle
     
     FINAL_MASK_FACTOR = 0.92
-    print(best_ball1.x,best_ball1.y)
-    gaberRefRemoved1 = mask_area_outside_ball(gaberRefRemoved1, best_ball1, FINAL_MASK_FACTOR, ignore_value=128)
-    gaberRefRemoved2 = mask_area_outside_ball(gaberRefRemoved2, best_ball2, FINAL_MASK_FACTOR, ignore_value=128)
-    cv2.imshow("Gabor Edges 1 (clean)", gaberRefRemoved1)
-    cv2.imshow("Gabor Edges 2 (clean)", gaberRefRemoved2)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-    time.sleep(10222)
+    gaberRefRemoved1 = mask_area_outside_ball(gaberRefRemoved1, best_ball1, FINAL_MASK_FACTOR, mask_value=(255, 255, 255))
+    gaberRefRemoved2 = mask_area_outside_ball(gaberRefRemoved2, best_ball2, FINAL_MASK_FACTOR, mask_value=(255, 255, 255))
+    # cv2.imshow("Gabor Edges 1 (clean)", gaberRefRemoved1)
+    # cv2.imshow("Gabor Edges 2 (clean)", gaberRefRemoved2)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
+    # time.sleep(10222)
+
     # 6) De-rotate each image half the perspective offset so both appear "centered"
-    offset1 = np.array(local_ball1.angles_camera_ortho_perspective[:2], dtype=np.float32)
-    offset2 = np.array(local_ball2.angles_camera_ortho_perspective[:2], dtype=np.float32)
+    print("step 6")
+    offset1 = np.array(best_ball1.angles_camera_ortho_perspective[:2], dtype=np.float32)
+    offset2 = np.array(best_ball2.angles_camera_ortho_perspective[:2], dtype=np.float32)
     delta = (offset2 - offset1) * 0.5
     delta[1] *= -1  # match your C++ sign convention
+    print(offset1,offset2,delta)
     
-    edges1 = get_rotated_image(edges1, local_ball1, tuple(delta.astype(int)))
-    edges2 = get_rotated_image(edges2, local_ball2, tuple((-delta).astype(int)))
+    unrotatedBallImg1DimpleEdges = gaberRefRemoved1.copy()
+    unrotatedBallImg2DimpleEdges = gaberRefRemoved2.copy()
+    
+    edges1 = get_rotated_image(unrotatedBallImg1DimpleEdges, best_ball1, tuple(delta.astype(int)))
+    edges2 = get_rotated_image(unrotatedBallImg2DimpleEdges, best_ball2, tuple((-delta).astype(int)))
+    cv2.imshow("Edges 1", edges1)
+    cv2.imshow("Edges 2", edges2)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
     # 7) Coarse-search for best 3D rotation that aligns edges1 → edges2
     coarse_space = RotationSearchSpace(
@@ -142,11 +147,7 @@ def get_ball_rotation(
     # Test with sample image
     # Test with sample image path
 test_image_path = "/home/vglalala/GCFive/Images/log_cam2_last_strobed_img.png"
-test_img1 = cv2.imread(test_image_path, cv2.IMREAD_GRAYSCALE)
-test_img2 = cv2.imread(test_image_path, cv2.IMREAD_GRAYSCALE)  # or another image
+test_img = cv2.imread(test_image_path, cv2.IMREAD_GRAYSCALE)
 
-from GolfBall import GolfBall
-ball1 = GolfBall(x=0, y=0, measured_radius_pixels=0, angles_camera_ortho_perspective=(0.0, 0.0, 0.0))
-ball2 = GolfBall(x=0, y=0, measured_radius_pixels=0, angles_camera_ortho_perspective=(0.0, 0.0, 0.0))
 
-get_ball_rotation(test_img1, ball1, test_img2, ball2)
+get_ball_rotation(test_img)

@@ -1,25 +1,10 @@
 import numpy as np
-from GolfBall import GolfBall
-def unproject_3d_ball_to_2d_image(
-    src3d: np.ndarray,
-    destination_image_gray: np.ndarray,
-    ball: GolfBall  # your Python GolfBall class, not used here but kept for API parity
-) -> None:
+def unproject_3d_ball_to_2d_image(src3d, ball):
     """
-    Copy the second channel from a (rows×cols×2) int32 src3d array back into the
-    single‐channel 8‐bit destination_image_gray, ignoring the first channel.
-
-    Args:
-        src3d:                  np.ndarray of shape (H, W, 2), dtype=int32.
-                                [:,:,0] is ignored; [:,:,1] is the pixel value.
-        destination_image_gray: np.ndarray of shape (H, W), dtype=uint8;
-                                this will be modified in place.
-        ball:                   GolfBall instance (unused here).
+    src3d: output of project_2d_image_to_3d_ball (rows,cols,2)
+    ball: used only if you want to re‐mask or postprocess
+    returns: 2D np.ndarray (uint8) where each pixel is channel‐1 from src3d
     """
-    rows, cols = destination_image_gray.shape
-    # Iterate in (y, x) order
-    for y in range(rows):
-        for x in range(cols):
-            # src3d[y, x] is a length‐2 array: [maxValueZ, pixelValue]
-            pixel_value = int(src3d[y, x, 1])
-            destination_image_gray[y, x] = pixel_value
+    # simply take the “pixel” channel back out
+    dest = src3d[...,1].astype(np.uint8)
+    return dest

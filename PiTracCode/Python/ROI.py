@@ -25,7 +25,6 @@ def calculate_clarity_score(cropped_img):
 
 def run_hough_with_radius(image):
     # image: input image (grayscale or BGR)
-    # radius: expected radius (int)
     blurred = cv2.GaussianBlur(image, (9, 9), 2)
     circles = cv2.HoughCircles(blurred, 
                                cv2.HOUGH_GRADIENT, 
@@ -38,14 +37,14 @@ def run_hough_with_radius(image):
 
     box_coords = []
     scores_info = []
-    best_ball = None
+    best_balls = []
     display_img = image.copy() if len(image.shape) == 3 else cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
     if circles is not None:
         circles = np.round(circles[0, :]).astype("int")
         # Sort circles by x-coordinate to label them from left to right
         circles = sorted(circles, key=lambda c: c[0])
         h, w = image.shape[:2]
-        best = min(circles, key=lambda c: (c[0] - w//2)**2 + (c[1] - h//2)**2)
+        best = sorted(circles, key=lambda c: (c[0] - w//2)**2 + (c[1] - h//2)**2)[:2]
         for idx, (x, y, r) in enumerate(circles):
             # Calculate the top-left and bottom-right points of the bounding box
             top_left = (x - r, y - r)
@@ -61,13 +60,6 @@ def run_hough_with_radius(image):
             # Crop the detected circle from the original image
             cropped_img = image[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]]
             
-            # Save the cropped image (optional, can be commented out if not needed)
-            # cropped_dir = "CroppedBalls"
-            # os.makedirs(cropped_dir, exist_ok=True)
-            # cropped_path = os.path.join(cropped_dir, f"cropped_circle_{idx + 1}.png")
-            # cv2.imwrite(cropped_path, cropped_img)
-            # print(f"Cropped image saved to {cropped_path}")
-            
             # Calculate scores
             overlap_score = calculate_overlap_score((x, y, r), [c for i, c in enumerate(circles) if i != idx])
             clarity_score = calculate_clarity_score(cropped_img)
@@ -80,17 +72,14 @@ def run_hough_with_radius(image):
                 "overlap_score": overlap_score,
                 "clarity_score": clarity_score,
                 "total_score": total_score,
-                # "cropped_image_path": cropped_path
             })
-            # Save the best ball as a GolfBall object (relative to crop)
-            if (x, y, r) == tuple(best):
-                best_ball = GolfBall(x=x, y=y, measured_radius_pixels=r, angles_camera_ortho_perspective=(0.0, 0.0, 0.0))
-        # Export scores information to a JSON file (optional)
-        # scores_json_path = "circle_scores.json"
-        # with open(scores_json_path, 'w') as json_file:
-        #     json.dump(scores_info, json_file, indent=4)
+            # Save the best balls as GolfBall objects (relative to crop)
+            for bx, by, br in best:
+                if x == bx and y == by and r == br:
+                    best_balls.append(GolfBall(x=x, y=y, measured_radius_pixels=r, angles_camera_ortho_perspective=(0.0, 0.0, 0.0)))
+                    break
         print(f"Detected {len(circles)} circle(s).")
     else:
         print("No circles detected.")
     
-    return best_ball
+    return best_balls if len(best_balls) == 2 else None
