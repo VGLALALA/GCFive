@@ -2,7 +2,6 @@ import cv2
 import numpy as np
 from typing import Tuple
 from dataclasses import dataclass
-from GolfBall import GolfBall
 from IsolateCode import isolate_ball
 from ApplyGaborFilter import apply_gabor_filter_to_ball
 from RemoveReflection import remove_reflections
@@ -57,12 +56,12 @@ def get_ball_rotation(
     remove_reflections(ball_image1, edges1)
     remove_reflections(ball_image2, edges2)
 
-    # 5) Mask out everything outside the ball’s circle
+    # 5) Mask out everything outside the ball's circle
     FINAL_MASK_FACTOR = 0.92
     edges1 = mask_area_outside_ball(edges1, local_ball1, FINAL_MASK_FACTOR, ignore_value=128)
     edges2 = mask_area_outside_ball(edges2, local_ball2, FINAL_MASK_FACTOR, ignore_value=128)
 
-    # 6) De-rotate each image half the perspective offset so both appear “centered”
+    # 6) De-rotate each image half the perspective offset so both appear "centered"
     offset1 = np.array(local_ball1.angles_camera_ortho_perspective[:2], dtype=np.float32)
     offset2 = np.array(local_ball2.angles_camera_ortho_perspective[:2], dtype=np.float32)
     delta = (offset2 - offset1) * 0.5
@@ -71,7 +70,7 @@ def get_ball_rotation(
     edges1 = get_rotated_image(edges1, local_ball1, tuple(delta.astype(int)))
     edges2 = get_rotated_image(edges2, local_ball2, tuple((-delta).astype(int)))
 
-    # 7) Coarse‐search for best 3D rotation that aligns edges1 → edges2
+    # 7) Coarse-search for best 3D rotation that aligns edges1 → edges2
     coarse_space = RotationSearchSpace(
         x_start=COARSE_X_START, x_end=COARSE_X_END, x_inc=COARSE_X_INC,
         y_start=COARSE_Y_START, y_end=COARSE_Y_END, y_inc=COARSE_Y_INC,

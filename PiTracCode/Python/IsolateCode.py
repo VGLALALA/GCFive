@@ -2,8 +2,8 @@ import cv2
 import numpy as np
 import copy
 from typing import Tuple
+from GolfBall import GolfBall
 from MaskAreaOutsideBall import mask_area_outside_ball
-from GetBallRotation import GolfBall
 
 def isolate_ball(
     img: np.ndarray,
@@ -21,7 +21,7 @@ def isolate_ball(
         ball_crop:   Cropped & masked image of the ball.
         ball_local:  A copy of `ball` whose x,y coords are relative to the crop.
     """
-    # Make a local copy so we don't mutate the caller’s ball
+    # Make a local copy so we don't mutate the caller's ball
     ball_local = copy.deepcopy(ball)
 
     # 1) Compute a slightly larger radius to include a tiny border
@@ -54,9 +54,10 @@ def isolate_ball(
     reference_mask_factor = 0.995
     ball_crop = mask_area_outside_ball(
         ball_crop,
-        ball_local,
+        (ball_local.x, ball_local.y),
+        ball_local.measured_radius_pixels,
         reference_mask_factor,
-        ignore_value=0
+        0
     )
 
     return ball_crop, ball_local
