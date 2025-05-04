@@ -46,10 +46,12 @@ def get_ball_rotation(
     ball_image2, local_ball2 = run_hough_with_radius(full_gray_image2, ball2)
     print("test 1")
     # Show the isolated balls
+    print("Ball 1 shape:", ball_image1.shape, "dtype:", ball_image1.dtype)
+    print("Ball 2 shape:", ball_image2.shape, "dtype:", ball_image2.dtype)
     cv2.imshow("Ball 1", ball_image1)
     cv2.imshow("Ball 2", ball_image2)
-    cv2.waitKey(1)
-
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
     # --- END TEST ---
     print("step 2")
     # 2) Resize so both crops are the same size
@@ -58,10 +60,9 @@ def get_ball_rotation(
     cv2.imshow("Ball 1", ball_image1)
     cv2.imshow("Ball 2", ball_image2)
     cv2.waitKey(1)
-    print("step 3")
-    ball_image1, local_ball1 = isolate_ball(full_gray_image1, ball1) #Working
-    ball_image2, local_ball2 = isolate_ball(full_gray_image2, ball2)
 
+
+    print("step 3")
     ball_image1, ball_image2, local_ball1, local_ball2 = \
         match_ball_image_sizes(ball_image1, ball_image2, local_ball1, local_ball2)  #Working
     # 3) Apply Gabor filters to pick out dimple edges
@@ -119,30 +120,8 @@ def get_ball_rotation(
     return (norm_x, norm_y, norm_z)
 
     # Test with sample image
-    if __name__ == "__main__":
-        import cv2
-        from Convert_Canny import convert_to_canny
-        from ballDetection import auto_determine_circle_radius, run_hough_with_radius
+    # Test with sample image path
+test_image_path = r"C:\Users\theka\Downloads\GCFive\Images\log_cam2_last_strobed_img.png"
 
-        # Load and process test image
-        test_image_path = r"C:\Users\theka\Downloads\GCFive\Images\log_cam2_last_strobed_img.png"
-        
-        # Get ball radius
-        try:
-            radius = auto_determine_circle_radius(test_image_path)
-            print(f"Detected ball radius: {radius}px")
-            
-            # Get ball location
-            canny_image = convert_to_canny(test_image_path)
-            circles = run_hough_with_radius(canny_image, radius)
-            
-            if circles:
-                print("Ball detected at:", circles[0])
-            else:
-                print("No ball detected in test image")
-                
-        except ValueError as e:
-            print(f"Error processing test image: {e}")
-            
-        except Exception as e:
-            print(f"Unexpected error: {e}")
+# Get ball radius from image
+

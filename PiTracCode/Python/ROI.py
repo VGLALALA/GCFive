@@ -23,7 +23,7 @@ def calculate_clarity_score(cropped_img):
     clarity_score = min(1.0, variance / 100.0)  # Normalize clarity score
     return clarity_score
 
-def run_hough_with_radius(image, radius):
+def run_hough_with_radius(image):
     # image: input image (grayscale or BGR)
     # radius: expected radius (int)
     blurred = cv2.GaussianBlur(image, (9, 9), 2)
@@ -33,8 +33,8 @@ def run_hough_with_radius(image, radius):
                                minDist=40,
                                param1=100, 
                                param2=30, 
-                               minRadius=radius - 5, 
-                               maxRadius=radius + 5)
+                               minRadius=30, 
+                               maxRadius=70)
 
     box_coords = []
     scores_info = []
