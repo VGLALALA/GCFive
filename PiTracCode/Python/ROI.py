@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import os
+import json
 
 def convert_to_canny(image_path):
     # Read the image in grayscale
@@ -48,6 +49,7 @@ def run_hough_with_radius(radius):
                                maxRadius=radius + 5)
 
     box_coords = []
+    scores_info = []
     if circles is not None:
         circles = np.round(circles[0, :]).astype("int")
         # Sort circles by x-coordinate to label them from left to right
@@ -80,6 +82,21 @@ def run_hough_with_radius(radius):
             total_score = (overlap_score + clarity_score) / 2
             print(f"Circle {idx + 1} Score: {total_score:.2f} (Overlap: {overlap_score:.2f}, Clarity: {clarity_score:.2f})")
             
+            # Collect score information
+            scores_info.append({
+                "circle_index": idx + 1,
+                "overlap_score": overlap_score,
+                "clarity_score": clarity_score,
+                "total_score": total_score,
+                "cropped_image_path": cropped_path
+            })
+            
+        # Export scores information to a JSON file
+        scores_json_path = "/home/vglalala/GCFive/Images/circle_scores.json"
+        with open(scores_json_path, 'w') as json_file:
+            json.dump(scores_info, json_file, indent=4)
+        print(f"Scores information saved to {scores_json_path}")
+        
         print(f"Detected {len(circles)} circle(s).")
     else:
         print("No circles detected.")
