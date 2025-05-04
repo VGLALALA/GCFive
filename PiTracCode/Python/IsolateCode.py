@@ -12,6 +12,7 @@ def isolate_ball(
     """
     Crops out a square region around the detected ball, recenters the ball metadata,
     equalizes (optional), then masks out pixels just outside the ball edge.
+    If ball.x, ball.y, or ball.measured_radius_pixels are 0 or None, auto-detects them.
 
     Args:
         img:   Full grayscale image.
@@ -21,6 +22,27 @@ def isolate_ball(
         ball_crop:   Cropped & masked image of the ball.
         ball_local:  A copy of `ball` whose x,y coords are relative to the crop.
     """
+    # Auto-detect if needed
+    if not getattr(ball, 'x', None) or not getattr(ball, 'y', None) or not getattr(ball, 'measured_radius_pixels', None):
+        print("[isolate_ball] Ball parameters missing, running HoughCircles...")
+        circles = cv2.HoughCircles(
+            img, cv2.HOUGH_GRADIENT, dp=1.2, minDist=50,
+            param1=100, param2=30, minRadius=70, maxRadius=150
+        )
+        if circles is not None:
+            circles = np.round(circles[0, :]).astype("int")
+            print(f"[isolate_ball] All detected circles: {circles}")
+            x, y, r = circles[0]
+            print(f"[isolate_ball] Detected ball at (x={x}, y={y}), radius={r}")
+            ball.x = x
+            ball.y = y
+            ball.measured_radius_pixels = r
+        else:
+            print("[isolate_ball] No ball detected in image!")
+            raise ValueError("No ball detected in image!")
+    else:
+        print(f"[isolate_ball] Using provided ball: x={ball.x}, y={ball.y}, radius={ball.measured_radius_pixels}")
+
     # Make a local copy so we don't mutate the caller's ball
     ball_local = copy.deepcopy(ball)
 
@@ -33,6 +55,7 @@ def isolate_ball(
     x1 = int(ball_local.x - r1)
     y1 = int(ball_local.y - r1)
     w  = h = 2 * r1
+    print(f"[isolate_ball] Crop top-left: ({x1}, {y1}), size: {w}x{h}")
 
     # 3) Clip to image bounds
     x1 = max(0, min(x1, img.shape[1] - w - 1))
@@ -45,6 +68,7 @@ def isolate_ball(
     new_center = int(round(rInc + ball_local.measured_radius_pixels))
     ball_local.x = new_center
     ball_local.y = new_center
+    print(f"[isolate_ball] Local ball center in crop: ({ball_local.x}, {ball_local.y}), radius={ball_local.measured_radius_pixels}")
 
     # 6) (Optional) equalize histogram if desired
     # ball_crop = cv2.equalizeHist(ball_crop)

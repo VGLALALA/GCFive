@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import math
+from typing import Tuple
 
 # Constants (tweak as needed)
 K_GABOR_MAX_WHITE_PERCENT = 44

@@ -2,7 +2,7 @@ import numpy as np
 import math
 from typing import Tuple
 from GolfBall import GolfBall
-from ProjectionOp import ProjectionOp
+# from ProjectionOp import ProjectionOp
 # Match your C++ ignore value
 K_PIXEL_IGNORE_VALUE = 128
 
@@ -41,12 +41,12 @@ def project_to_3d_ball(
     rot_z =  math.radians(rotation_angles_deg[2])
 
     # Instantiate your projection functor (you must implement this)
-    proj_op = ProjectionOp(ball, projected_img, rot_x, rot_y, rot_z)
+    # proj_op = ProjectionOp(ball, projected_img, rot_x, rot_y, rot_z)
 
     # Serial loop (analogous to C++ forEach when serialization is on)
     for y in range(rows):
         for x in range(cols):
             pixel = int(image_gray[y, x])
-            proj_op(pixel, (x, y))
+            # proj_op(pixel, (x, y))
 
     return projected_img
