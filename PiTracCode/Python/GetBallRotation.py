@@ -47,20 +47,25 @@ def get_ball_rotation(
     best_ball1 = run_hough_with_radius(full_gray_image1)
     best_ball2 = run_hough_with_radius(full_gray_image2)
     print("test 1")
-    print(best_ball1)
-    print(best_ball2)
+
     # Show the isolated balls
     ball_image1 = isolate_ball(full_gray_image1, best_ball1)
     ball_image2 = isolate_ball(full_gray_image2, best_ball2)
+    # Update the center coordinates of best_ball1 and best_ball2
+    best_ball1.x = ball_image1.shape[1] // 2
+    best_ball1.y = ball_image1.shape[0] // 2
+
+    best_ball2.x = ball_image2.shape[1] // 2
+    best_ball2.y = ball_image2.shape[0] // 2
     # --- END TEST ---
     print("step 2")
     # 2) Resize so both crops are the same size
     ball_image1, ball_image2 = match_ball_image_sizes(ball_image1, ball_image2)
-    
 
     print("step 3")
     # 3) Apply Gabor filters to pick out dimple edges
     ball_image1 = cv2.equalizeHist(ball_image1)
+    
     ball_image2 = cv2.equalizeHist(ball_image2)
     edge1 = apply_gabor_filter_image(ball_image1)
     edge2 = apply_gabor_filter_image(ball_image2)
@@ -70,32 +75,35 @@ def get_ball_rotation(
     edge1_clean = cv2.morphologyEx(edge1_clean, cv2.MORPH_CLOSE, kernel)
     edge2_clean = cv2.morphologyEx(edge2, cv2.MORPH_OPEN, kernel)
     edge2_clean = cv2.morphologyEx(edge2_clean, cv2.MORPH_CLOSE, kernel)
-    cv2.imshow("Gabor Edges 1 (clean)", edge1_clean)
-    cv2.imshow("Gabor Edges 2 (clean)", edge2_clean)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    # cv2.imshow("Gabor Edges 1 (clean)", edge1_clean)
+    # cv2.imshow("Gabor Edges 2 (clean)", edge2_clean)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
 
     print("step 4")
 
     # 4) Remove specular reflections
     gaberRefRemoved1 = remove_reflections(ball_image1, edge1_clean)
     gaberRefRemoved2 = remove_reflections(ball_image2, edge2_clean)
+    
+
+    # 5) Mask out everything outside the ball's circle
+    
+    FINAL_MASK_FACTOR = 0.92
+    print(best_ball1.x,best_ball1.y)
+    gaberRefRemoved1 = mask_area_outside_ball(gaberRefRemoved1, best_ball1, FINAL_MASK_FACTOR, ignore_value=128)
+    gaberRefRemoved2 = mask_area_outside_ball(gaberRefRemoved2, best_ball2, FINAL_MASK_FACTOR, ignore_value=128)
     cv2.imshow("Gabor Edges 1 (clean)", gaberRefRemoved1)
     cv2.imshow("Gabor Edges 2 (clean)", gaberRefRemoved2)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
     time.sleep(10222)
-    # 5) Mask out everything outside the ball's circle
-    FINAL_MASK_FACTOR = 0.92
-    edges1 = mask_area_outside_ball(edges1, local_ball1, FINAL_MASK_FACTOR, ignore_value=128)
-    edges2 = mask_area_outside_ball(edges2, local_ball2, FINAL_MASK_FACTOR, ignore_value=128)
-
     # 6) De-rotate each image half the perspective offset so both appear "centered"
     offset1 = np.array(local_ball1.angles_camera_ortho_perspective[:2], dtype=np.float32)
     offset2 = np.array(local_ball2.angles_camera_ortho_perspective[:2], dtype=np.float32)
     delta = (offset2 - offset1) * 0.5
     delta[1] *= -1  # match your C++ sign convention
-
+    
     edges1 = get_rotated_image(edges1, local_ball1, tuple(delta.astype(int)))
     edges2 = get_rotated_image(edges2, local_ball2, tuple((-delta).astype(int)))
 
@@ -133,7 +141,7 @@ def get_ball_rotation(
 
     # Test with sample image
     # Test with sample image path
-test_image_path = r"C:\Users\theka\Downloads\GCFive\Images\log_cam2_last_strobed_img.png"
+test_image_path = "/home/vglalala/GCFive/Images/log_cam2_last_strobed_img.png"
 test_img1 = cv2.imread(test_image_path, cv2.IMREAD_GRAYSCALE)
 test_img2 = cv2.imread(test_image_path, cv2.IMREAD_GRAYSCALE)  # or another image
 

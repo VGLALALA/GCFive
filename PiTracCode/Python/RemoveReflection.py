@@ -22,8 +22,8 @@ def remove_reflections(
     Returns:
         np.ndarray: Image with reflections removed/marked
     """
-    # Create output image from filtered_image
-    result = filtered_image.copy()
+    # Create output image from original_image
+    result = original_image.copy()
 
     # 1. Dynamically compute brightness cutoff (optional – C++ version uses fixed kReflectionMinimumRGBValue)
     # brightness_cutoff, lowest_brightness, highest_brightness = get_image_characteristics(
