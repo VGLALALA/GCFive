@@ -84,7 +84,7 @@ def run_hough_with_radius(image):
             })
             # Save the best ball as a GolfBall object (relative to crop)
             if (x, y, r) == tuple(best):
-                best_ball = GolfBall(x=r, y=r, measured_radius_pixels=r, angles_camera_ortho_perspective=(0.0, 0.0, 0.0))
+                best_ball = GolfBall(x=x, y=y, measured_radius_pixels=r, angles_camera_ortho_perspective=(0.0, 0.0, 0.0))
         # Export scores information to a JSON file (optional)
         # scores_json_path = "circle_scores.json"
         # with open(scores_json_path, 'w') as json_file:
@@ -93,4 +93,4 @@ def run_hough_with_radius(image):
     else:
         print("No circles detected.")
     
-    return box_coords, best_ball
+    return best_ball
