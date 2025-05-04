@@ -15,14 +15,47 @@ def convert_to_canny(image_path):
     
     return edges
 
-image_path = "/home/vglalala/GCFive/Images/detected.png"
+image_path = "/home/vglalala/GCFive/Images/spin_ball_1_gray_image1.png"
 canny_image = convert_to_canny(image_path)
 config_path = "/home/vglalala/GCFive/detection.json"
 original_img = cv2.imread(image_path)
 display_img = original_img.copy()
 
 points = []
+def auto_determine_circle_radius(image_path):
+    """
+    Automatically determines the radius of a circle in the image using Hough Circle Transform.
 
+    Args:
+        image_path: Path to the image file.
+
+    Returns:
+        The estimated radius of the detected circle.
+    """
+    # Read the image in grayscale
+    img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+    
+    # Apply GaussianBlur to reduce noise and improve edge detection
+    blurred = cv2.GaussianBlur(img, (9, 9), 2)
+    
+    # Use Hough Circle Transform to detect circles
+    circles = cv2.HoughCircles(blurred, 
+                               cv2.HOUGH_GRADIENT, 
+                               dp=1.2, 
+                               minDist=40,
+                               param1=100, 
+                               param2=30, 
+                               minRadius=0, 
+                               maxRadius=0)
+
+    if circles is not None:
+        circles = np.round(circles[0, :]).astype("int")
+        # Assuming the first detected circle is the desired one
+        x, y, r = circles[0]
+        return r
+    else:
+        raise ValueError("No circle detected in the image.")
+    
 def run_hough_with_radius(radius):
     blurred = cv2.GaussianBlur(canny_image, (9, 9), 2)
     circles = cv2.HoughCircles(blurred, 
