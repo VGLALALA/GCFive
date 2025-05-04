@@ -42,6 +42,7 @@ def get_ball_rotation(
     """
     print("Step 1")
     # 1) Isolate each ball into its own tight crop
+<<<<<<< HEAD
     ball_image1, local_ball1 = run_hough_with_radius(full_gray_image1, ball1)
     ball_image2, local_ball2 = run_hough_with_radius(full_gray_image2, ball2)
     print("test 1")
@@ -59,6 +60,14 @@ def get_ball_rotation(
     cv2.imshow("Ball 2", ball_image2)
     cv2.waitKey(1)
     print("step 3")
+=======
+    ball_image1, local_ball1 = isolate_ball(full_gray_image1, ball1) #Working
+    ball_image2, local_ball2 = isolate_ball(full_gray_image2, ball2)
+
+    ball_image1, ball_image2, local_ball1, local_ball2 = \
+        match_ball_image_sizes(ball_image1, ball_image2, local_ball1, local_ball2)  #Working
+
+>>>>>>> ae6a91eccb738e1a61620db6c2dcc7789dc1e784
     # 3) Apply Gabor filters to pick out dimple edges
     edges1 = apply_gabor_filter_to_ball(ball_image1, local_ball1)
     edges2 = apply_gabor_filter_to_ball(ball_image2, local_ball2)
