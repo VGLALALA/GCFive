@@ -2,18 +2,8 @@ import cv2
 import numpy as np
 import os
 import json
+from Convert_Canny import convert_to_canny
 
-def convert_to_canny(image_path):
-    # Read the image in grayscale
-    img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
-    
-    # Apply GaussianBlur to reduce noise and improve edge detection
-    blurred = cv2.GaussianBlur(img, (5, 5), 1.4)
-    
-    # Use Canny edge detection
-    edges = cv2.Canny(blurred, 100, 200)
-    
-    return edges
 
 image_path = "/home/vglalala/GCFive/Images/log_cam2_last_strobed_img.png"
 canny_image = convert_to_canny(image_path)
@@ -92,7 +82,7 @@ def run_hough_with_radius(radius):
             })
             
         # Export scores information to a JSON file
-        scores_json_path = "/home/vglalala/GCFive/Images/circle_scores.json"
+        scores_json_path = "/home/vglalala/GCFive/Images/CroppedBalls/circle_scores.json"
         with open(scores_json_path, 'w') as json_file:
             json.dump(scores_info, json_file, indent=4)
         print(f"Scores information saved to {scores_json_path}")
