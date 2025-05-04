@@ -15,6 +15,7 @@ from GenerateRotationCandidate import RotationSearchSpace
 from GolfBall import GolfBall
 from ROI import run_hough_with_radius
 import time
+from ApplyGaborFilter import apply_gabor_filter_image
 
 COARSE_X_INC   = 6
 COARSE_X_START = -42
@@ -55,16 +56,18 @@ def get_ball_rotation(
     print("step 2")
     # 2) Resize so both crops are the same size
     ball_image1, ball_image2 = match_ball_image_sizes(ball_image1, ball_image2)
-    cv2.imshow("Ball 1", ball_image1)
-    cv2.imshow("Ball 2", ball_image2)
-    cv2.waitKey(1)
+    
 
     print("step 3")
-    ball_image1, ball_image2, local_ball1, local_ball2 = \
-        match_ball_image_sizes(ball_image1, ball_image2, local_ball1, local_ball2)  #Working
     # 3) Apply Gabor filters to pick out dimple edges
-    gaborImage1 = apply_gabor_filter_to_ball(ball_image1, local_ball1)
-    gaborImage2 = apply_gabor_filter_to_ball(ball_image2, local_ball2)
+    
+    edge1 = apply_gabor_filter_image(ball_image1)
+    edge2 = apply_gabor_filter_image(ball_image2)
+    cv2.imshow("Gabor Edges 1", edge1)
+    cv2.imshow("Gabor Edges 2", edge2)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    time.sleep(10222)
     print("step 4")
     # 4) Remove specular reflections
     remove_reflections(ball_image1, edges1)
