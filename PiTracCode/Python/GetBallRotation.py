@@ -25,17 +25,7 @@ COARSE_Z_INC   = 6
 COARSE_Z_START = -50
 COARSE_Z_END   = 60
 
-@dataclass
-class RotationSearchSpace:
-    x_inc: int
-    x_start: int
-    x_end: int
-    y_inc: int
-    y_start: int
-    y_end: int
-    z_inc: int
-    z_start: int
-    z_end: int
+
 
 
 
