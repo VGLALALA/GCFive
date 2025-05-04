@@ -60,11 +60,18 @@ def get_ball_rotation(
 
     print("step 3")
     # 3) Apply Gabor filters to pick out dimple edges
-    
+    ball_image1 = cv2.equalizeHist(ball_image1)
+    ball_image2 = cv2.equalizeHist(ball_image2)
     edge1 = apply_gabor_filter_image(ball_image1)
     edge2 = apply_gabor_filter_image(ball_image2)
-    cv2.imshow("Gabor Edges 1", edge1)
-    cv2.imshow("Gabor Edges 2", edge2)
+    # Clean up the edge maps
+    kernel = np.ones((1, 1), np.uint8)
+    edge1_clean = cv2.morphologyEx(edge1, cv2.MORPH_OPEN, kernel)
+    edge1_clean = cv2.morphologyEx(edge1_clean, cv2.MORPH_CLOSE, kernel)
+    edge2_clean = cv2.morphologyEx(edge2, cv2.MORPH_OPEN, kernel)
+    edge2_clean = cv2.morphologyEx(edge2_clean, cv2.MORPH_CLOSE, kernel)
+    cv2.imshow("Gabor Edges 1 (clean)", edge1_clean)
+    cv2.imshow("Gabor Edges 2 (clean)", edge2_clean)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
     time.sleep(10222)
