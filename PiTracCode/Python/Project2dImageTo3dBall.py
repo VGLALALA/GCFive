@@ -24,7 +24,7 @@ def project_to_3d_ball(
     Returns:
         projected_img: HxW x 2 int32 array.  
                        [:,:,0] = projected pixel value  
-                       [:,:,1] = mask (kPixelIgnoreValue for “no data”)
+                       [:,:,1] = mask (kPixelIgnoreValue for "no data")
     """
     rows, cols = image_gray.shape[:2]
 

@@ -11,6 +11,8 @@ from GetRotatedImage import get_rotated_image
 from GenerateRotationCandidate import generate_rotation_candidates
 from CompareRotationImage import compare_rotation_image
 from matchBallSize import match_ball_image_sizes
+from GenerateRotationCandidate import RotationSearchSpace
+
 
 
 COARSE_X_INC   = 6
