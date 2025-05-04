@@ -2,14 +2,7 @@ import cv2
 import numpy as np
 import json
 import os
-from PiTracCode.Python.Convert_Canny import convert_to_canny
-
-image_path = "/home/vglalala/GCFive/Images/log_cam2_last_strobed_img.png"
-canny_image = convert_to_canny(image_path)
-config_path = "/home/vglalala/GCFive/detection.json"
-original_img = cv2.imread(image_path)
-display_img = original_img.copy()
-
+from Convert_Canny import convert_to_canny
 points = []
 def auto_determine_circle_radius(image_path):
     """
@@ -45,7 +38,7 @@ def auto_determine_circle_radius(image_path):
     else:
         raise ValueError("No circle detected in the image.")
     
-def run_hough_with_radius(radius):
+def run_hough_with_radius(canny_image, radius):
     blurred = cv2.GaussianBlur(canny_image, (9, 9), 2)
     circles = cv2.HoughCircles(blurred, 
                                cv2.HOUGH_GRADIENT, 
@@ -56,7 +49,7 @@ def run_hough_with_radius(radius):
                                minRadius=radius - 5, 
                                maxRadius=radius + 5)
 
-    box_coords = []
+    circle_data = []
     if circles is not None:
         circles = np.round(circles[0, :]).astype("int")
         # Sort circles by x-coordinate to label them from left to right
@@ -65,27 +58,19 @@ def run_hough_with_radius(radius):
             # Calculate the top-left and bottom-right points of the bounding box
             top_left = (x - r, y - r)
             bottom_right = (x + r, y + r)
-            box_coords.append((top_left, bottom_right))
-            # Draw the rectangle around the detected circle
-            cv2.rectangle(display_img, top_left, bottom_right, (0, 255, 0), 2)
-            # Label the rectangle with its index
-            cv2.putText(display_img, str(idx + 1), (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
-            # Print the coordinates of the bounding box
-            print(f"Circle {idx + 1}: Top-left {top_left}, Bottom-right {bottom_right}")
+            # Append circle data
+            circle_data.append((x, y, r))
         print(f"Detected {len(circles)} circle(s).")
     else:
         print("No circles detected.")
     
-    return box_coords
+    return circle_data
 
 def click_event(event, x, y, flags, param):
     global points
     if event == cv2.EVENT_LBUTTONDOWN:
         points.append((x, y))
         if len(points) == 2:
-            cv2.circle(display_img, points[0], 3, (0, 255, 0), -1)
-            cv2.circle(display_img, points[1], 3, (0, 255, 0), -1)
-            cv2.line(display_img, points[0], points[1], (255, 0, 0), 2)
             radius = int(np.linalg.norm(np.array(points[0]) - np.array(points[1])) / 2)
             print(f"Estimated radius: {radius} px")
 
@@ -95,35 +80,3 @@ def click_event(event, x, y, flags, param):
 
             box_coords = run_hough_with_radius(radius)
             print("Bounding box coordinates:", box_coords)
-            cv2.imshow("Manual + Hough Detection", display_img)
-
-# --- Main Entry ---
-print("Choose detection mode:\n1. Manual set with click\n2. Load radius from config (detection.json)")
-mode = input("Mode [1/2]: ").strip()
-
-if mode == "1":
-    print("Click two points across a golf ball to set diameter.")
-    cv2.imshow("Manual + Hough Detection", display_img)
-    cv2.setMouseCallback("Manual + Hough Detection", click_event)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-
-elif mode == "2":
-    if not os.path.exists(config_path):
-        print("Config file detection.json not found.")
-    else:
-        with open(config_path, 'r') as f:
-            config = json.load(f)
-            radius = config.get("radius")
-            if radius:
-                print(f"Using radius from config: {radius}px")
-                box_coords = run_hough_with_radius(radius)
-                print("Bounding box coordinates:", box_coords)
-                cv2.imshow("Config-based Hough Detection", display_img)
-                cv2.waitKey(0)
-                cv2.destroyAllWindows()
-            else:
-                print("No 'radius' key found in config file.")
-
-else:
-    print("Invalid option. Please choose 1 or 2.")

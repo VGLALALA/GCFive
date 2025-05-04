@@ -2,8 +2,8 @@ import cv2
 import numpy as np
 from GolfBall import GolfBall
 # Commenting out the import that causes the error
-from PiTracCode.Python.ballDetection import run_hough_with_radius, auto_determine_circle_radius
-
+from ballDetection import run_hough_with_radius, auto_determine_circle_radius
+from Convert_Canny import convert_to_canny
 def format_image_to_golfball(image_path: str) -> GolfBall:
     """
     Formats an image to a GolfBall class instance by detecting the golf ball outline
@@ -21,9 +21,9 @@ def format_image_to_golfball(image_path: str) -> GolfBall:
 
     # Automatically determine the radius of the circle
     radius = auto_determine_circle_radius(image_path)
-    
+    canny = convert_to_canny(image_path)
     # Run Hough Circle Transform to detect circles
-    circles = run_hough_with_radius(radius)
+    circles = run_hough_with_radius(canny, radius)
     
     # Assuming the first detected circle is the golf ball
     if circles is not None and len(circles) > 0:
@@ -31,12 +31,3 @@ def format_image_to_golfball(image_path: str) -> GolfBall:
         return GolfBall(x=x, y=y, measured_radius_pixels=r, angles_camera_ortho_perspective=(0.0, 0.0, 0.0))
     else:
         raise ValueError("No golf ball detected in the image.")
-
-
-if __name__ == "__main__":
-    test_image_path = "/home/vglalala/GCFive/Images/spin_ball_1_gray_image1.png"
-    try:
-        golf_ball = format_image_to_golfball(test_image_path)
-        print(f"Detected Golf Ball: x={golf_ball.x}, y={golf_ball.y}, radius={golf_ball.measured_radius_pixels}")
-    except ValueError as e:
-        print(e)

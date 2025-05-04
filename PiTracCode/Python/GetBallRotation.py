@@ -42,21 +42,11 @@ def get_ball_rotation(
     """
     print("Step 1")
     # 1) Isolate each ball into its own tight crop
-    ball_image1, local_ball1 = isolate_ball(full_gray_image1, ball1)
+    ball_image1, local_ball1 = isolate_ball(full_gray_image1, ball1) #Working
     ball_image2, local_ball2 = isolate_ball(full_gray_image2, ball2)
-    print("test 1")
-    # --- TEST: Show original and isolated images for both balls ---
-    cv2.imshow("Original Image 1", full_gray_image1)
-    cv2.imshow("Isolated Ball 1", ball_image1)
-    cv2.imshow("Original Image 2", full_gray_image2)
-    cv2.imshow("Isolated Ball 2", ball_image2)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-    # --- END TEST ---
-    print("step 2")
-    # 2) Resize so both crops are the same size
+
     ball_image1, ball_image2, local_ball1, local_ball2 = \
-        match_ball_image_sizes(ball_image1, ball_image2, local_ball1, local_ball2)
+        match_ball_image_sizes(ball_image1, ball_image2, local_ball1, local_ball2)  #Working
 
     # 3) Apply Gabor filters to pick out dimple edges
     edges1 = apply_gabor_filter_to_ball(ball_image1, local_ball1)
