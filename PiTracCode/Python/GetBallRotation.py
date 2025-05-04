@@ -2,6 +2,8 @@ import cv2
 import numpy as np
 from typing import Tuple
 from dataclasses import dataclass
+from GolfBall import GolfBall
+
 
 COARSE_X_INC   = 6
 COARSE_X_START = -42

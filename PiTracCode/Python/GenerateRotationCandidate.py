@@ -2,6 +2,8 @@ import math
 import numpy as np
 from dataclasses import dataclass
 from typing import List, Tuple
+from GolfBall import GolfBall
+from Project2dImageTo3dBall import project_to_3d_ball
 
 @dataclass
 class RotationCandidate:
@@ -63,7 +65,7 @@ def generate_rotation_candidates(
                     search_space.z_inc
                 )):
                 # Project the 2D dimple edges onto a 3D ball at these Euler angles:
-                img3d = project_2d_image_to_3d_ball(
+                img3d = project_to_3d_ball(
                     base_dimple_image,
                     ball,
                     (x_deg, y_deg, z_deg)
