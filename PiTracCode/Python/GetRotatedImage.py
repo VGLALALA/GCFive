@@ -20,21 +20,21 @@ def get_rotated_image(
     Returns:
         output_gray_img:     same shape as input, after 3D→2D re-projection.
     """
-    print(gray_2d_input_image.shape)
+    print("shape1: " + str(gray_2d_input_image.shape))
     # 1) Project the 2D input onto a 3D hemisphere at the given rotation
     ball_3d_image = project_2d_image_to_3d_ball(
         gray_2d_input_image,
         ball,
         rotation
     )
-
+    print("shape2: " + str(ball_3d_image.shape))
     # 2) Prepare an empty output image
     output_gray_img = np.zeros_like(gray_2d_input_image)
-
+    print("shape3: " + str(output_gray_img.shape))
     # 3) Unproject the 3D hemisphere back to a 2D grayscale image
-    unproject_3d_ball_to_2d_image(
+    ball_2d_image = unproject_3d_ball_to_2d_image(
         ball_3d_image,
         ball
     )
-
-    return output_gray_img
+    print("shape4: " + str(ball_3d_image.shape))
+    return ball_2d_image

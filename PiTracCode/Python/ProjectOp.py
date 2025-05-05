@@ -77,8 +77,8 @@ class ProjectionOp:
         _, _, z2 = self.get_ball_z(newX, newY)
         # valid rotated point
         if (0 <= newX < self.cols and 0 <= newY < self.rows and z2 > 0.0):
-            rx = int(newX + 0.5)
-            ry = int(newY + 0.5)
+            rx = int(newX + 0.5) - 1
+            ry = int(newY + 0.5) - 1
             self.projectedImg[ry, rx, 0] = int(z2)
             self.projectedImg[ry, rx, 1] = 128 if prerotated_invalid else pixelValue
 

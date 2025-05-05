@@ -13,6 +13,7 @@ from RotationSearchSpace import RotationSearchSpace
 from ROI import run_hough_with_radius
 from CompareCandidateAngleImage import compare_candidate_angle_images
 from ApplyGaborFilter import apply_gabor_filter_image, apply_gabor_filter_to_ball
+import time
 
 COARSE_X_INC   = 6
 COARSE_X_START = -42
@@ -51,8 +52,9 @@ def get_ball_rotation(
     cv2.imshow("Isolated Ball 2", ball_image2)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-    cv2.imshow(ball_image1)
-    cv2.imshow(ball_image2)
+    cv2.imshow("Ball Image 1", ball_image1)
+    cv2.imshow("Ball Image 2", ball_image2)
+    cv2.waitKey(0)
     # Update the center coordinates of best_ball1 and best_ball2
     best_ball1.x = ball_image1.shape[1] // 2
     best_ball1.y = ball_image1.shape[0] // 2
@@ -113,23 +115,23 @@ def get_ball_rotation(
     delta2d = np.round(delta_float).astype(int)
     delta = np.array([delta2d[0], delta2d[1], 0], dtype=int)
 
-    unrotatedBallImg1DimpleEdges = gaberRefRemoved1.copy()
-    adjustedimg = get_rotated_image(unrotatedBallImg1DimpleEdges, best_ball1, tuple(delta))
+    adjustedimg1 = get_rotated_image(gaberRefRemoved1, best_ball1, tuple(delta))
     print(f"Adjusting rotation for camera view of ball 1 to offset (x,y,z)={delta[0]},{delta[1]},{delta[2]}")
-    cv2.imshow(adjustedimg)
-    time.sleep(909090)
+    cv2.imshow("Adjusted Image", adjustedimg1)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    # time.sleep(909090)
     # Compute remaining offset, invert Y sign, and pad Z-axis with zero
     delta2d = np.round(-(offset2 - offset1 - delta_float)).astype(int)
     delta2d[1] = -delta2d[1]
     delta2 = np.array([delta2d[0], delta2d[1], 0], dtype=int)
 
-    unrotatedBallImg2DimpleEdges = gaberRefRemoved1.copy()
-    get_rotated_image(unrotatedBallImg2DimpleEdges, best_ball2, tuple(delta2))
+    adjustedimg2 = get_rotated_image(gaberRefRemoved2, best_ball2, tuple(delta2))
     print(f"Adjusting rotation for camera view of ball 2 to offset (x,y,z)={delta2[0]},{delta2[1]},{delta2[2]}")
-    # cv2.imshow("Final perspective-de-rotated filtered ball_image1DimpleEdges", unrotatedBallImg1DimpleEdges)
-    # cv2.imshow("Final perspective-de-rotated filtered ball_image2DimpleEdges", unrotatedBallImg2DimpleEdges)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
+    cv2.imshow("Final perspective-de-rotated filtered ball_image1DimpleEdges", adjustedimg1)
+    cv2.imshow("Final perspective-de-rotated filtered ball_image2DimpleEdges", adjustedimg2)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
     # 7) Coarse-search for best 3D rotation that aligns edges1 → edges2
     print("step 7")
     coarse_space = RotationSearchSpace(
@@ -137,12 +139,12 @@ def get_ball_rotation(
         y_start=COARSE_Y_START, y_end=COARSE_Y_END, y_inc=COARSE_Y_INC,
         z_start=COARSE_Z_START, z_end=COARSE_Z_END, z_inc=COARSE_Z_INC,
     )
-    candidates = generate_rotation_candidates(edge1_clean, coarse_space, best_ball1)
+    output_mat, mat_size, candidates = generate_rotation_candidates(edge1_clean, coarse_space, best_ball1)
 
     print("step 8")
     comparison_csv_data = []
     best_candidate_index, comparison_csv_data = compare_candidate_angle_images(
-        unrotatedBallImg2DimpleEdges, candidates[0], candidates
+        adjustedimg2, output_mat, candidates, mat_size
     )
 
     rotation_result = np.array([0.0, 0.0, 0.0])
@@ -178,9 +180,9 @@ def get_ball_rotation(
         z_inc=1
     )
 
-    final_candidates = generate_rotation_candidates(edge1_clean, final_search_space, best_ball1)
+    foutput_mat, fmat_size, fcandidates  = generate_rotation_candidates(edge1_clean, final_search_space, best_ball1)
     best_candidate_index, comparison_csv_data = compare_candidate_angle_images(
-        unrotatedBallImg2DimpleEdges, final_candidates[0], final_candidates
+        adjustedimg2, foutput_mat, fcandidates, fmat_size
     )
 
     if write_spin_analysis_CSV_files:
@@ -193,7 +195,7 @@ def get_ball_rotation(
     best_rot_x, best_rot_y, best_rot_z = 0, 0, 0
 
     if best_candidate_index >= 0:
-        final_c = final_candidates[best_candidate_index]
+        final_c = fcandidates[best_candidate_index]
         best_rot_x = final_c.x_rotation_degrees
         best_rot_y = final_c.y_rotation_degrees
         best_rot_z = final_c.z_rotation_degrees

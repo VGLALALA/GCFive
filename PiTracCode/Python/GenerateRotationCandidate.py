@@ -43,6 +43,7 @@ def generate_rotation_candidates(base_dimple_image: np.ndarray,
 
     idx = 0
     for x_idx, x_deg in enumerate(range(xs, xe+1, xi)):
+        print("X_deg: " + str(x_deg))
         for y_idx, y_deg in enumerate(range(ys, ye+1, yi)):
             for z_idx, z_deg in enumerate(range(zs, ze+1, zi)):
                 # Project to 3D hemisphere at (x_deg, y_deg, z_deg)

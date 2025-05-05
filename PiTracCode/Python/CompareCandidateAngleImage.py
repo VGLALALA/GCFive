@@ -11,6 +11,7 @@ def compare_candidate_angle_images(
     target_image: np.ndarray,
     candidate_elements_mat: np.ndarray,
     candidates: List[RotationCandidate],
+    candidate_size: Tuple[int,int,int],
     serialize_debug: bool = False
 ) -> Tuple[int, List[str]]:
     """
@@ -26,7 +27,9 @@ def compare_candidate_angle_images(
         best_index: index of the best candidate.
         comparison_csv_data: list of TSV strings for each candidate.
     """
-    xSize, ySize, zSize = candidate_elements_mat.shape
+    # candidate_elements_mat is a 3D array of indices into candidates list
+    # Get dimensions for iteration
+    xSize, ySize, zSize = candidate_size
     num_candidates = xSize * ySize * zSize
     comparison_data = [""] * num_candidates
 
