@@ -114,9 +114,9 @@ def get_ball_rotation(
     delta = np.array([delta2d[0], delta2d[1], 0], dtype=int)
 
     unrotatedBallImg1DimpleEdges = gaberRefRemoved1.copy()
-    get_rotated_image(unrotatedBallImg1DimpleEdges, best_ball1, tuple(delta))
+    adjustedimg = get_rotated_image(unrotatedBallImg1DimpleEdges, best_ball1, tuple(delta))
     print(f"Adjusting rotation for camera view of ball 1 to offset (x,y,z)={delta[0]},{delta[1]},{delta[2]}")
-    cv2.imshow(unrotatedBallImg1DimpleEdges)
+    cv2.imshow(adjustedimg)
     time.sleep(909090)
     # Compute remaining offset, invert Y sign, and pad Z-axis with zero
     delta2d = np.round(-(offset2 - offset1 - delta_float)).astype(int)
