@@ -57,21 +57,21 @@ class ProjectionOp:
         dx, dy, dz = self.get_ball_z(col, row)
         prerot_invalid = (dz <= 1e-4)
 
-        # if off‐sphere, just mark ignore and bail
+        # if off-sphere, just mark ignore and bail
         if prerot_invalid:
             self.proj[row, col, 0] = int(dz)
             self.proj[row, col, 1] = K_PIXEL_IGNORE_VALUE
             return
 
-        # 2) apply X‐axis rotation (around horizontal axis)
+        # 2) apply X-axis rotation (around horizontal axis)
         if self.rotX:
             dy, dz = dy * self.cosX - dz * self.sinX, dy * self.sinX + dz * self.cosX
 
-        # 3) apply Y‐axis rotation (around vertical axis)
+        # 3) apply Y-axis rotation (around vertical axis)
         if self.rotY:
             dx, dz = dx * self.cosY + dz * self.sinY, dz * self.cosY - dx * self.sinY
 
-        # 4) apply Z‐axis rotation (in‐plane)
+        # 4) apply Z-axis rotation (in-plane)
         if self.rotZ:
             dx, dy = dx * self.cosZ - dy * self.sinZ, dx * self.sinZ + dy * self.cosZ
 
@@ -82,7 +82,7 @@ class ProjectionOp:
         # only write if it lands inside the image and still on front hemisphere
         rows, cols = self.proj.shape[:2]
         if 0 <= new_col < cols and 0 <= new_row < rows and dz > 0:
-            rc = int(new_col + 0.5)
-            rr = int(new_row + 0.5)
+            rc = min(max(int(new_col + 0.5), 0), cols - 1)
+            rr = min(max(int(new_row + 0.5), 0), rows - 1)
             self.proj[rr, rc, 0] = int(dz)
             self.proj[rr, rc, 1] = (K_PIXEL_IGNORE_VALUE if prerot_invalid else pixel_value)

@@ -1,9 +1,10 @@
 import numpy as np
 
+
 def compare_rotation_image(
     img1: np.ndarray,
     img2: np.ndarray,
-    ignore_value: int = 128
+    ignore_value: tuple[int, int, int] = (255, 255, 255)
 ) -> tuple[int, int, np.ndarray]:
     """
     Compare two same-size images pixel by pixel, ignoring pixels marked with ignore_value.
@@ -31,12 +32,12 @@ def compare_rotation_image(
             else:
                 p2 = int(img2[y, x])
 
-            if p1 != ignore_value and p2 != ignore_value:
+            if p1 != ignore_value[0] and p2 != ignore_value[1]:
                 total_examined += 1
                 if p1 == p2:
                     score += 1
                     correspondence[y, x] = 255
             else:
-                correspondence[y, x] = ignore_value
+                correspondence[y, x] = ignore_value[2]
 
     return score, total_examined, correspondence

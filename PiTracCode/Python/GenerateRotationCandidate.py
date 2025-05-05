@@ -28,62 +28,36 @@ class RotationSearchSpace:
 def generate_rotation_candidates(
     base_dimple_image: np.ndarray,
     search_space: RotationSearchSpace,
-    ball: GolfBall  # your existing Python GolfBall class
-) -> Tuple[
-    List[RotationCandidate],
-    np.ndarray,
-    Tuple[int,int,int]
-]:
+    ball: GolfBall
+) -> List[np.ndarray]:
     """
-    Generate all rotated‐ball candidates over the given search_space.
-    Returns (candidates, index_matrix, (xSize,ySize,zSize)).
+    Generate all rotated ball candidates over the given search space.
+    Returns a list of rotated images.
     """
-    # Compute grid dimensions
-    x_size = math.ceil((search_space.x_end   - search_space.x_start) / search_space.x_inc) + 1
-    y_size = math.ceil((search_space.y_end   - search_space.y_start) / search_space.y_inc) + 1
-    z_size = math.ceil((search_space.z_end   - search_space.z_start) / search_space.z_inc) + 1
+    candidates = []
 
-    # 3D index matrix
-    index_mat = np.zeros((x_size, y_size, z_size), dtype=np.uint16)
-
-    candidates: List[RotationCandidate] = []
-    idx = 0
-
-    for ix, x_deg in enumerate(range(
+    for x_deg in range(
             search_space.x_start,
             search_space.x_end + 1,
             search_space.x_inc
-        )):
-        for iy, y_deg in enumerate(range(
+        ):
+        print(x_deg)
+        for y_deg in range(
                 search_space.y_start,
                 search_space.y_end + 1,
                 search_space.y_inc
-            )):
-            for iz, z_deg in enumerate(range(
+            ):
+            for z_deg in range(
                     search_space.z_start,
                     search_space.z_end + 1,
                     search_space.z_inc
-                )):
-                # Project the 2D dimple edges onto a 3D ball at these Euler angles:
-                img3d = project_2d_image_to_3d_ball(
+                ):
+                # Project the 2D dimple edges onto a 3D ball at these Euler angles
+                rotated_img = project_2d_image_to_3d_ball(
                     base_dimple_image,
                     ball,
                     (x_deg, y_deg, z_deg)
                 )
+                candidates.append(rotated_img)
 
-                # Record candidate
-                c = RotationCandidate(
-                    index=idx,
-                    x_deg=x_deg,
-                    y_deg=y_deg,
-                    z_deg=z_deg,
-                    img_3d=img3d
-                )
-                candidates.append(c)
-
-                # Store index in our 3D grid
-                index_mat[ix, iy, iz] = idx
-
-                idx += 1
-
-    return candidates, index_mat, (x_size, y_size, z_size)
+    return candidates

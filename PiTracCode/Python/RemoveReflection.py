@@ -3,7 +3,7 @@ import numpy as np
 
 # Constants (match your C++ definitions)
 kReflectionMinimumRGBValue = 245  # brightness threshold for reflections
-kPixelIgnoreValue = 128           # value to mark ignored pixels
+kPixelIgnoreValue = 128  # value to mark ignored pixels
 
 def remove_reflections(
     original_image: np.ndarray,

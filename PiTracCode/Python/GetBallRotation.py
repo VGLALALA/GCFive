@@ -80,15 +80,11 @@ def get_ball_rotation(
     
 
     # 5) Mask out everything outside the ball's circle
-    
+    print("step 5")
     FINAL_MASK_FACTOR = 0.92
     gaberRefRemoved1 = mask_area_outside_ball(gaberRefRemoved1, best_ball1, FINAL_MASK_FACTOR, mask_value=(255, 255, 255))
     gaberRefRemoved2 = mask_area_outside_ball(gaberRefRemoved2, best_ball2, FINAL_MASK_FACTOR, mask_value=(255, 255, 255))
-    # cv2.imshow("Gabor Edges 1 (clean)", gaberRefRemoved1)
-    # cv2.imshow("Gabor Edges 2 (clean)", gaberRefRemoved2)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
-    # time.sleep(10222)
+    
 
     # 6) De-rotate each image half the perspective offset so both appear "centered"
     print("step 6")
@@ -109,31 +105,77 @@ def get_ball_rotation(
     delta2d[1] = -delta2d[1]
     delta2 = np.array([delta2d[0], delta2d[1], 0], dtype=int)
 
-    unrotatedBallImg2DimpleEdges = gaberRefRemoved2.copy()
+    unrotatedBallImg2DimpleEdges = gaberRefRemoved1.copy()
     get_rotated_image(unrotatedBallImg2DimpleEdges, best_ball2, tuple(delta2))
     print(f"Adjusting rotation for camera view of ball 2 to offset (x,y,z)={delta2[0]},{delta2[1]},{delta2[2]}")
     
-    cv2.imshow("Final perspective-de-rotated filtered ball_image1DimpleEdges", unrotatedBallImg1DimpleEdges)
-    cv2.imshow("Final perspective-de-rotated filtered ball_image2DimpleEdges", unrotatedBallImg2DimpleEdges)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-
+    # cv2.imshow("Final perspective-de-rotated filtered ball_image1DimpleEdges", unrotatedBallImg1DimpleEdges)
+    # cv2.imshow("Final perspective-de-rotated filtered ball_image2DimpleEdges", unrotatedBallImg2DimpleEdges)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
     # 7) Coarse-search for best 3D rotation that aligns edges1 → edges2
+    print("step 7")
     coarse_space = RotationSearchSpace(
         x_start=COARSE_X_START, x_end=COARSE_X_END, x_inc=COARSE_X_INC,
         y_start=COARSE_Y_START, y_end=COARSE_Y_END, y_inc=COARSE_Y_INC,
         z_start=COARSE_Z_START, z_end=COARSE_Z_END, z_inc=COARSE_Z_INC,
     )
-    candidates = generate_rotation_candidates(edges1, coarse_space, local_ball1)
-    best_idx = compare_rotation_image(edges2, candidates)
+    candidates = generate_rotation_candidates(edge1_clean, coarse_space, best_ball1)
+    best_score = 0
+    best_idx = 0
+    best_x = 0
+    best_y = 0 
+    best_z = 0
+    
+    # Find best coarse rotation
+    for i, candidate in enumerate(candidates):
+        x_deg = COARSE_X_START + (i // ((COARSE_Y_END - COARSE_Y_START + 1) * (COARSE_Z_END - COARSE_Z_START + 1))) * COARSE_X_INC
+        y_deg = COARSE_Y_START + ((i % ((COARSE_Y_END - COARSE_Y_START + 1) * (COARSE_Z_END - COARSE_Z_START + 1))) // (COARSE_Z_END - COARSE_Z_START + 1)) * COARSE_Y_INC
+        z_deg = COARSE_Z_START + (i % (COARSE_Z_END - COARSE_Z_START + 1)) * COARSE_Z_INC
+        
+        score, total, _ = compare_rotation_image(edge2_clean, candidate)
+        if score > best_score:
+            best_score = score
+            best_idx = i
+            best_x = x_deg
+            best_y = y_deg
+            best_z = z_deg
+            
     best_coarse = candidates[best_idx]
-
+    
+    print("step 8")
     # 8) Fine-search around that best candidate
-    fine_space = best_coarse.make_refined_search_space()
-    final_candidates = generate_rotation_candidates(edges1, fine_space, local_ball1)
-    best_idx = compare_rotation_image(edges2, final_candidates)
+    FINE_SEARCH_RANGE = 5  # Search +/- 5 degrees around best coarse rotation
+    FINE_INC = 1  # 1 degree increments for fine search
+    
+    fine_space = RotationSearchSpace(
+        x_start=best_x - FINE_SEARCH_RANGE, x_end=best_x + FINE_SEARCH_RANGE, x_inc=FINE_INC,
+        y_start=best_y - FINE_SEARCH_RANGE, y_end=best_y + FINE_SEARCH_RANGE, y_inc=FINE_INC,
+        z_start=best_z - FINE_SEARCH_RANGE, z_end=best_z + FINE_SEARCH_RANGE, z_inc=FINE_INC
+    )
+    
+    final_candidates = generate_rotation_candidates(edge1_clean, fine_space, best_ball1)
+    best_score = 0
+    best_idx = 0
+    
+    # Find best fine rotation
+    for i, candidate in enumerate(final_candidates):
+        score, total, _ = compare_rotation_image(edge2_clean, candidate)
+        if score > best_score:
+            best_score = score
+            best_idx = i
+            
     best_final = final_candidates[best_idx]
-
+    x_deg = fine_space.x_start + (best_idx // ((fine_space.y_end - fine_space.y_start + 1) * (fine_space.z_end - fine_space.z_start + 1))) * fine_space.x_inc
+    y_deg = fine_space.y_start + ((best_idx % ((fine_space.y_end - fine_space.y_start + 1) * (fine_space.z_end - fine_space.z_start + 1))) // (fine_space.z_end - fine_space.z_start + 1)) * fine_space.y_inc
+    z_deg = fine_space.z_start + (best_idx % (fine_space.z_end - fine_space.z_start + 1)) * fine_space.z_inc
+    
+    print(f"Range searched: x={fine_space.x_start} to {fine_space.x_end}, y={fine_space.y_start} to {fine_space.y_end}, z={fine_space.z_start} to {fine_space.z_end}")
+    print(f"Best match at: x={x_deg}, y={y_deg}, z={z_deg}")
+    # Print the best matching rotation image
+    cv2.imshow("Best rotation match", best_final)
+    cv2.waitKey(1)
+    time.sleep(313123)
     # 9) Normalize to real-world spin axes
     spin_offset = offset1 + delta
     spin_offset_rad = np.radians(spin_offset)

@@ -20,6 +20,7 @@ def get_rotated_image(
     Returns:
         output_gray_img:     same shape as input, after 3D→2D re-projection.
     """
+    print(gray_2d_input_image.shape)
     # 1) Project the 2D input onto a 3D hemisphere at the given rotation
     ball_3d_image = project_2d_image_to_3d_ball(
         gray_2d_input_image,

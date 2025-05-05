@@ -4,7 +4,7 @@ import numpy as np
 def mask_area_outside_ball(ball_image: np.ndarray,
                            ball,
                            mask_reduction_factor: float,
-                           mask_value: tuple[int, int, int]) -> np.ndarray:
+                           mask_value: int = 128) -> np.ndarray:
     """
     Masks everything outside a reduced-radius circle around the ball,
     painting the outside region with mask_value.
@@ -12,7 +12,7 @@ def mask_area_outside_ball(ball_image: np.ndarray,
     :param ball_image:     Input image (e.g. edge-detected dimples), H×W×C
     :param ball:           GolfBall-like object with .measured_radius_pixels, .x, .y
     :param mask_reduction_factor: Fraction to shrink the mask circle (e.g. 0.92)
-    :param mask_value:     BGR color to paint outside (e.g. (128,128,128))
+    :param mask_value:     Intensity value to paint outside (e.g. 128)
     :returns:              New image with outside masked
     """
     # 1) compute reduced mask radius
@@ -23,7 +23,7 @@ def mask_area_outside_ball(ball_image: np.ndarray,
     cv2.circle(mask,
                center=(int(ball.x), int(ball.y)),
                radius=mask_radius,
-               color=(255, 255, 255),
+               color=255,
                thickness=-1)
 
     # 3) keep only inside-circle pixels
@@ -38,7 +38,7 @@ def mask_area_outside_ball(ball_image: np.ndarray,
     cv2.circle(mask,
                center=(int(ball.x), int(ball.y)),
                radius=mask_radius,
-               color=(0, 0, 0),
+               color=0,
                thickness=-1)
 
     # 5) XOR in the outside region => paints everything outside the circle

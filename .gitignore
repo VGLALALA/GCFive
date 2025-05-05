@@ -1,1 +1,3 @@
 .venv/
+.PiTracCode/_pycache_/
+.Images/CroppedBalls/
