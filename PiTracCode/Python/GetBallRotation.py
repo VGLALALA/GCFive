@@ -1,7 +1,6 @@
 import cv2
 from typing import Tuple
 import numpy as np
-from typing import Tuple
 from IsolateCode import isolate_ball
 from RemoveReflection import remove_reflections
 from MaskAreaOutsideBall import mask_area_outside_ball
@@ -14,6 +13,7 @@ from ROI import run_hough_with_radius
 from CompareCandidateAngleImage import compare_candidate_angle_images
 from ApplyGaborFilter import apply_gabor_filter_image, apply_gabor_filter_to_ball
 import time
+import os
 
 COARSE_X_INC   = 6
 COARSE_X_START = -42
@@ -156,7 +156,9 @@ def get_ball_rotation(
     write_spin_analysis_CSV_files = True
 
     if write_spin_analysis_CSV_files:
-        csv_fname_coarse = "./data/spin/spin_analysis_coarse.csv"
+        csv_dir = "./data/spin"
+        os.makedirs(csv_dir, exist_ok=True)
+        csv_fname_coarse = os.path.join(csv_dir, "spin_analysis_coarse.csv")
         print(f"Writing CSV spin data to: {csv_fname_coarse}")
         with open(csv_fname_coarse, "w") as csv_file_coarse:
             for element in comparison_csv_data:
@@ -186,7 +188,7 @@ def get_ball_rotation(
     )
 
     if write_spin_analysis_CSV_files:
-        csv_fname_fine = "./data/spin/spin_analysis_fine.csv"
+        csv_fname_fine = os.path.join(csv_dir, "spin_analysis_fine.csv")
         print(f"Writing CSV spin data to: {csv_fname_fine}")
         with open(csv_fname_fine, "w") as csv_file_fine:
             for element in comparison_csv_data:
@@ -206,20 +208,46 @@ def get_ball_rotation(
         rotation_result = np.array([0, 0, 0])
     
     print("step 10")
-    spin_offset = offset1 + delta
-    spin_offset_rad = np.radians(spin_offset)
-    bx, by, bz = best_rot_x, best_rot_y, best_rot_z
+    result_bball2d_image = get_rotated_image(
+        ball_image1,
+        best_ball1,
+        (best_rot_x,best_rot_y,best_rot_z)
+    )
+    cv2.imshow("Original", ball_image1)
+    cv2.imshow("Actual", ball_image2)
+    cv2.imshow("Final rotated-by-best-angle originalBall1", result_bball2d_image)
+    cv2.waitKey(0)
+    print("step 11")
+        # Convert the best rotation angles from degrees to radians
+    spin_offset_angle_radians_x = np.radians(best_rot_x)
+    spin_offset_angle_radians_y = np.radians(best_rot_y)
+    spin_offset_angle_radians_z = np.radians(best_rot_z)
 
-    norm_x = int(round( bx * np.cos(spin_offset_rad[1]) + bz * np.sin(spin_offset_rad[1]) ))
-    norm_y = int(round( by * np.cos(spin_offset_rad[0]) - bz * np.sin(spin_offset_rad[0]) ))
-    norm_z = int(round( bz * np.cos(spin_offset_rad[0]) * np.cos(spin_offset_rad[1])
-                        - by * np.sin(spin_offset_rad[0])
-                        - bx * np.sin(spin_offset_rad[1]) ))
+    # Perform the normalization to the real-world axes
+    normalized_rot_x = int(round(best_rot_x * np.cos(spin_offset_angle_radians_y) + best_rot_z * np.sin(spin_offset_angle_radians_y)))
+    normalized_rot_y = int(round(best_rot_y * np.cos(spin_offset_angle_radians_x) - best_rot_z * np.sin(spin_offset_angle_radians_x)))
+    normalized_rot_z = int(round(best_rot_z * np.cos(spin_offset_angle_radians_x) * np.cos(spin_offset_angle_radians_y)))
+    normalized_rot_z -= int(round(best_rot_y * np.sin(spin_offset_angle_radians_x)))
+    normalized_rot_z -= int(round(best_rot_x * np.sin(spin_offset_angle_radians_y)))
 
-    # C-golfer convention: side-spin positive when surface moves right→left
-    norm_x = -norm_x
+    # Looks like golf folks consider the X (side) spin to be positive if the surface is
+    # going from right to left. So we negate it here.
+    normalized_rot_x = -normalized_rot_x
 
-    return (norm_x, norm_y, norm_z)
+    print("step 12")
+    result_bball2d_image = get_rotated_image(
+        ball_image1,
+        best_ball1,
+        (normalized_rot_x,normalized_rot_y,normalized_rot_z)
+    )
+    cv2.imshow("Original", ball_image1)
+    cv2.imshow("Actual", ball_image2)
+    cv2.imshow("Final rotated-by-best-angle originalBall1", result_bball2d_image)
+    cv2.waitKey(0)
+    
+    # Return the normalized rotation result
+    rotation_result = np.array([normalized_rot_x, normalized_rot_y, normalized_rot_z])
+    return rotation_result
 
     # Test with sample image
     # Test with sample image path
