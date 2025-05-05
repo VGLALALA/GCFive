@@ -1,3 +1,5 @@
 .venv/
-.PiTracCode/_pycache_/
+
 .Images/CroppedBalls/
+.PiTracCode/__pycache__/
+.PiTracCode/Python/__pycache__
