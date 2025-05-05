@@ -2,20 +2,17 @@ import cv2
 from typing import Tuple
 import numpy as np
 from typing import Tuple
-from dataclasses import dataclass
 from IsolateCode import isolate_ball
-from ApplyGaborFilter import apply_gabor_filter_to_ball
 from RemoveReflection import remove_reflections
 from MaskAreaOutsideBall import mask_area_outside_ball
 from GetRotatedImage import get_rotated_image
 from GenerateRotationCandidate import generate_rotation_candidates
 from CompareRotationImage import compare_rotation_image
 from matchBallSize import match_ball_image_sizes
-from GenerateRotationCandidate import RotationSearchSpace
-from GolfBall import GolfBall
+from RotationSearchSpace import RotationSearchSpace
 from ROI import run_hough_with_radius
-import time
-from ApplyGaborFilter import apply_gabor_filter_image
+from CompareCandidateAngleImage import compare_candidate_angle_images
+from ApplyGaborFilter import apply_gabor_filter_image, apply_gabor_filter_to_ball
 
 COARSE_X_INC   = 6
 COARSE_X_START = -42
@@ -31,18 +28,31 @@ COARSE_Z_END   = 60
 
 def get_ball_rotation(
     full_gray_image: np.ndarray,
-) -> Tuple[float,float,float]:
+) -> Tuple[float, float, float]:
     """
     Returns (spin_x, spin_y, spin_z) in degrees, corresponding to side-, back-, and axial-spin.
     """
-    print("Step 1")
+    # Display the full gray image
+    cv2.imshow("Full Gray Image", full_gray_image)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    
+    print("Step 1: Isolating each ball into its own tight crop")
     # 1) Isolate each ball into its own tight crop
-    best_ball1,best_ball2 = run_hough_with_radius(full_gray_image)
-    print("test 1")
+    best_ball1, best_ball2 = run_hough_with_radius(full_gray_image)
+    print("Balls isolated")
 
     # Show the isolated balls
     ball_image1 = isolate_ball(full_gray_image, best_ball1)
     ball_image2 = isolate_ball(full_gray_image, best_ball2)
+    
+    # Display the isolated ball images
+    cv2.imshow("Isolated Ball 1", ball_image1)
+    cv2.imshow("Isolated Ball 2", ball_image2)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    cv2.imshow(ball_image1)
+    cv2.imshow(ball_image2)
     # Update the center coordinates of best_ball1 and best_ball2
     best_ball1.x = ball_image1.shape[1] // 2
     best_ball1.y = ball_image1.shape[0] // 2
@@ -61,30 +71,37 @@ def get_ball_rotation(
     ball_image2 = cv2.equalizeHist(ball_image2)
     edge1 = apply_gabor_filter_image(ball_image1)
     edge2 = apply_gabor_filter_image(ball_image2)
+    
     # Clean up the edge maps
     kernel = np.ones((1, 1), np.uint8)
     edge1_clean = cv2.morphologyEx(edge1, cv2.MORPH_OPEN, kernel)
     edge1_clean = cv2.morphologyEx(edge1_clean, cv2.MORPH_CLOSE, kernel)
     edge2_clean = cv2.morphologyEx(edge2, cv2.MORPH_OPEN, kernel)
     edge2_clean = cv2.morphologyEx(edge2_clean, cv2.MORPH_CLOSE, kernel)
-    # cv2.imshow("Gabor Edges 1 (clean)", edge1_clean)
-    # cv2.imshow("Gabor Edges 2 (clean)", edge2_clean)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
+    cv2.imshow("Gabor Edges 1 (clean)", edge1_clean)
+    cv2.imshow("Gabor Edges 2 (clean)", edge2_clean)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
     print("step 4")
 
     # 4) Remove specular reflections
     gaberRefRemoved1 = remove_reflections(ball_image1, edge1_clean)
     gaberRefRemoved2 = remove_reflections(ball_image2, edge2_clean)
-    
+    cv2.imshow("Gabor Edges 1 (clean)", gaberRefRemoved1)
+    cv2.imshow("Gabor Edges 2 (clean)", gaberRefRemoved2)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
     # 5) Mask out everything outside the ball's circle
     print("step 5")
     FINAL_MASK_FACTOR = 0.92
     gaberRefRemoved1 = mask_area_outside_ball(gaberRefRemoved1, best_ball1, FINAL_MASK_FACTOR, mask_value=(255, 255, 255))
     gaberRefRemoved2 = mask_area_outside_ball(gaberRefRemoved2, best_ball2, FINAL_MASK_FACTOR, mask_value=(255, 255, 255))
-    
+    cv2.imshow("Gabor Edges 1 (clean)", gaberRefRemoved1)
+    cv2.imshow("Gabor Edges 2 (clean)", gaberRefRemoved2)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
     # 6) De-rotate each image half the perspective offset so both appear "centered"
     print("step 6")
@@ -99,7 +116,8 @@ def get_ball_rotation(
     unrotatedBallImg1DimpleEdges = gaberRefRemoved1.copy()
     get_rotated_image(unrotatedBallImg1DimpleEdges, best_ball1, tuple(delta))
     print(f"Adjusting rotation for camera view of ball 1 to offset (x,y,z)={delta[0]},{delta[1]},{delta[2]}")
-
+    cv2.imshow(unrotatedBallImg1DimpleEdges)
+    time.sleep(909090)
     # Compute remaining offset, invert Y sign, and pad Z-axis with zero
     delta2d = np.round(-(offset2 - offset1 - delta_float)).astype(int)
     delta2d[1] = -delta2d[1]
@@ -108,7 +126,6 @@ def get_ball_rotation(
     unrotatedBallImg2DimpleEdges = gaberRefRemoved1.copy()
     get_rotated_image(unrotatedBallImg2DimpleEdges, best_ball2, tuple(delta2))
     print(f"Adjusting rotation for camera view of ball 2 to offset (x,y,z)={delta2[0]},{delta2[1]},{delta2[2]}")
-    
     # cv2.imshow("Final perspective-de-rotated filtered ball_image1DimpleEdges", unrotatedBallImg1DimpleEdges)
     # cv2.imshow("Final perspective-de-rotated filtered ball_image2DimpleEdges", unrotatedBallImg2DimpleEdges)
     # cv2.waitKey(0)
@@ -121,65 +138,75 @@ def get_ball_rotation(
         z_start=COARSE_Z_START, z_end=COARSE_Z_END, z_inc=COARSE_Z_INC,
     )
     candidates = generate_rotation_candidates(edge1_clean, coarse_space, best_ball1)
-    best_score = 0
-    best_idx = 0
-    best_x = 0
-    best_y = 0 
-    best_z = 0
-    
-    # Find best coarse rotation
-    for i, candidate in enumerate(candidates):
-        x_deg = COARSE_X_START + (i // ((COARSE_Y_END - COARSE_Y_START + 1) * (COARSE_Z_END - COARSE_Z_START + 1))) * COARSE_X_INC
-        y_deg = COARSE_Y_START + ((i % ((COARSE_Y_END - COARSE_Y_START + 1) * (COARSE_Z_END - COARSE_Z_START + 1))) // (COARSE_Z_END - COARSE_Z_START + 1)) * COARSE_Y_INC
-        z_deg = COARSE_Z_START + (i % (COARSE_Z_END - COARSE_Z_START + 1)) * COARSE_Z_INC
-        
-        score, total, _ = compare_rotation_image(edge2_clean, candidate)
-        if score > best_score:
-            best_score = score
-            best_idx = i
-            best_x = x_deg
-            best_y = y_deg
-            best_z = z_deg
-            
-    best_coarse = candidates[best_idx]
-    
+
     print("step 8")
-    # 8) Fine-search around that best candidate
-    FINE_SEARCH_RANGE = 5  # Search +/- 5 degrees around best coarse rotation
-    FINE_INC = 1  # 1 degree increments for fine search
-    
-    fine_space = RotationSearchSpace(
-        x_start=best_x - FINE_SEARCH_RANGE, x_end=best_x + FINE_SEARCH_RANGE, x_inc=FINE_INC,
-        y_start=best_y - FINE_SEARCH_RANGE, y_end=best_y + FINE_SEARCH_RANGE, y_inc=FINE_INC,
-        z_start=best_z - FINE_SEARCH_RANGE, z_end=best_z + FINE_SEARCH_RANGE, z_inc=FINE_INC
+    comparison_csv_data = []
+    best_candidate_index, comparison_csv_data = compare_candidate_angle_images(
+        unrotatedBallImg2DimpleEdges, candidates[0], candidates
     )
+
+    rotation_result = np.array([0.0, 0.0, 0.0])
+
+    if best_candidate_index < 0:
+        print("Warning: No best candidate found.")
+        return rotation_result
+
+    write_spin_analysis_CSV_files = True
+
+    if write_spin_analysis_CSV_files:
+        csv_fname_coarse = "./data/spin/spin_analysis_coarse.csv"
+        print(f"Writing CSV spin data to: {csv_fname_coarse}")
+        with open(csv_fname_coarse, "w") as csv_file_coarse:
+            for element in comparison_csv_data:
+                csv_file_coarse.write(element)
+
+    c = candidates[best_candidate_index]
+
+    print(f"Best Coarse Initial Rotation Candidate was #{best_candidate_index} - Rot: ({c.x_rotation_degrees}, {c.y_rotation_degrees}, {c.z_rotation_degrees})")
+
+    print("step 9")
+
+    final_search_space = RotationSearchSpace(
+        x_start=c.x_rotation_degrees - COARSE_X_INC // 2,
+        x_end=c.x_rotation_degrees + COARSE_X_INC // 2,
+        x_inc=1,
+        y_start=c.y_rotation_degrees - COARSE_Y_INC // 2,
+        y_end=c.y_rotation_degrees + COARSE_Y_INC // 2,
+        y_inc=COARSE_Y_INC // 2,
+        z_start=c.z_rotation_degrees - COARSE_Z_INC // 2,
+        z_end=c.z_rotation_degrees + COARSE_Z_INC // 2,
+        z_inc=1
+    )
+
+    final_candidates = generate_rotation_candidates(edge1_clean, final_search_space, best_ball1)
+    best_candidate_index, comparison_csv_data = compare_candidate_angle_images(
+        unrotatedBallImg2DimpleEdges, final_candidates[0], final_candidates
+    )
+
+    if write_spin_analysis_CSV_files:
+        csv_fname_fine = "./data/spin/spin_analysis_fine.csv"
+        print(f"Writing CSV spin data to: {csv_fname_fine}")
+        with open(csv_fname_fine, "w") as csv_file_fine:
+            for element in comparison_csv_data:
+                csv_file_fine.write(element)
+
+    best_rot_x, best_rot_y, best_rot_z = 0, 0, 0
+
+    if best_candidate_index >= 0:
+        final_c = final_candidates[best_candidate_index]
+        best_rot_x = final_c.x_rotation_degrees
+        best_rot_y = final_c.y_rotation_degrees
+        best_rot_z = final_c.z_rotation_degrees
+
+        print(f"Best Raw Fine (and final) Rotation Candidate was #{best_candidate_index} - Rot: ({best_rot_x}, {best_rot_y}, {best_rot_z})")
+    else:
+        print("Warning: No best final candidate found. Returning 0,0,0 spin results.")
+        rotation_result = np.array([0, 0, 0])
     
-    final_candidates = generate_rotation_candidates(edge1_clean, fine_space, best_ball1)
-    best_score = 0
-    best_idx = 0
-    
-    # Find best fine rotation
-    for i, candidate in enumerate(final_candidates):
-        score, total, _ = compare_rotation_image(edge2_clean, candidate)
-        if score > best_score:
-            best_score = score
-            best_idx = i
-            
-    best_final = final_candidates[best_idx]
-    x_deg = fine_space.x_start + (best_idx // ((fine_space.y_end - fine_space.y_start + 1) * (fine_space.z_end - fine_space.z_start + 1))) * fine_space.x_inc
-    y_deg = fine_space.y_start + ((best_idx % ((fine_space.y_end - fine_space.y_start + 1) * (fine_space.z_end - fine_space.z_start + 1))) // (fine_space.z_end - fine_space.z_start + 1)) * fine_space.y_inc
-    z_deg = fine_space.z_start + (best_idx % (fine_space.z_end - fine_space.z_start + 1)) * fine_space.z_inc
-    
-    print(f"Range searched: x={fine_space.x_start} to {fine_space.x_end}, y={fine_space.y_start} to {fine_space.y_end}, z={fine_space.z_start} to {fine_space.z_end}")
-    print(f"Best match at: x={x_deg}, y={y_deg}, z={z_deg}")
-    # Print the best matching rotation image
-    cv2.imshow("Best rotation match", best_final)
-    cv2.waitKey(1)
-    time.sleep(313123)
-    # 9) Normalize to real-world spin axes
+    print("step 10")
     spin_offset = offset1 + delta
     spin_offset_rad = np.radians(spin_offset)
-    bx, by, bz = best_final.x, best_final.y, best_final.z
+    bx, by, bz = best_rot_x, best_rot_y, best_rot_z
 
     norm_x = int(round( bx * np.cos(spin_offset_rad[1]) + bz * np.sin(spin_offset_rad[1]) ))
     norm_y = int(round( by * np.cos(spin_offset_rad[0]) - bz * np.sin(spin_offset_rad[0]) ))
@@ -194,8 +221,8 @@ def get_ball_rotation(
 
     # Test with sample image
     # Test with sample image path
-test_image_path = "/home/vglalala/GCFive/Images/log_cam2_last_strobed_img.png"
+test_image_path = "./data/Images/log_cam2_last_strobed_img.png"
 test_img = cv2.imread(test_image_path, cv2.IMREAD_GRAYSCALE)
 
 
-get_ball_rotation(test_img)
+print(get_ball_rotation(test_img))

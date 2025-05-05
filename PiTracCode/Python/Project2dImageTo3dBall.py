@@ -1,27 +1,32 @@
+from typing import Tuple
 import numpy as np
+from GolfBall import GolfBall
 from ProjectOp import ProjectionOp
-
-K_PIXEL_IGNORE_VALUE = 128
-
-def project_2d_image_to_3d_ball(image_gray, ball, rotation_angles_degrees):
+import math
+kPixelIgnoreValue = 128
+def project_2d_image_to_3d_ball(
+    image_gray: np.ndarray,
+    ball: GolfBall,
+    rotation_angles_degrees: Tuple[int, int, int]
+) -> np.ndarray:
     """
-    image_gray: 2D np.ndarray (dtype=uint8) with values 0,255 or K_PIXEL_IGNORE_VALUE
-    ball: GolfBall‐like object (see ProjectionOp.__init__ doc)
-    rotation_angles_degrees: (angle_x, angle_y, angle_z)
-    returns: 3D image as np.ndarray shape (rows,cols,2), dtype=int32
-             channel 0 = depth (Z), channel 1 = pixel or ignore flag
+    Projects a 2D grayscale image of a golf ball onto a virtual 3D hemisphere,
+    rotates it by the specified Euler angles, and unprojects back to 2D.
+    Returns a (H, W, 2) image where [:, :, 0] is the Z-depth and [:, :, 1] is
+    the grayscale/ignore flags.
     """
-    if image_gray.ndim != 2:
-        raise ValueError("Input image must be a 2D array")
-    
     rows, cols = image_gray.shape
-    proj = np.zeros((rows, cols, 2), dtype=np.int32)
-    proj[..., 1] = K_PIXEL_IGNORE_VALUE
-
-    op = ProjectionOp(ball, proj, rotation_angles_degrees)
-    for row in range(rows):
-        for col in range(cols):
-            pv = int(image_gray[row, col])
-            op.project_pixel(col, row, pv)
-
-    return proj
+    # output: depth + pixel value/ignore
+    projectedImg = np.zeros((rows, cols, 2), dtype=np.int32)
+    projectedImg[..., 1] = kPixelIgnoreValue
+    # convert degrees to radians (note sign flip on X)
+    x_rad = -math.radians(rotation_angles_degrees[0])
+    y_rad = math.radians(rotation_angles_degrees[1])
+    z_rad = math.radians(rotation_angles_degrees[2])
+    op = ProjectionOp(ball, projectedImg, x_rad, y_rad, z_rad)
+    # iterate over pixels
+    for y in range(rows):
+        for x in range(cols):
+            pixel = int(image_gray[y, x])
+            op(pixel, x, y)
+    return projectedImg
