@@ -5,6 +5,7 @@ from Project2dImageTo3dBall import project_2d_image_to_3d_ball
 import numpy as np
 import time
 from functools import partial
+import multiprocessing
 
 def _worker_task(task, base_image, ball):
     """
@@ -86,3 +87,7 @@ def generate_rotation_candidates(base_dimple_image: np.ndarray,
     print(f"compute_candidate_angle_images took {t1 - t0:.3f}s, generated {total} candidates")
 
     return output_mat, mat_size, candidates
+
+if __name__ == '__main__':
+    multiprocessing.freeze_support()
+    # Add any test code here if needed

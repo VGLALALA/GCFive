@@ -15,6 +15,7 @@ from ApplyGaborFilter import apply_gabor_filter_image, apply_gabor_filter_to_bal
 import time
 import os
 from concurrent.futures import ThreadPoolExecutor
+import multiprocessing
 
 COARSE_X_INC   = 6
 COARSE_X_START = -42
@@ -262,10 +263,14 @@ def get_ball_rotation(
     rotation_result = np.array([normalized_rot_x, normalized_rot_y, normalized_rot_z])
     return rotation_result
 
-    # Test with sample image
-    # Test with sample image path
-test_image_path = "./data/Images/log_cam2_last_strobed_img.png"
-test_img = cv2.imread(test_image_path, cv2.IMREAD_GRAYSCALE)
-
-
-print(get_ball_rotation(test_img))
+if __name__ == '__main__':
+    multiprocessing.freeze_support()
+    # Add your test code here
+    
+    test_img_path = r"C:\Users\theka\Downloads\GCFive\data\Images\gs_log_img__log_ball_final_found_ball_img.png"
+    
+    test_img = cv2.imread(test_img_path, cv2.IMREAD_GRAYSCALE)
+    if test_img is not None:
+        print(get_ball_rotation(test_img))
+    else:
+        print(f"Failed to load test image from: {test_img_path}")
