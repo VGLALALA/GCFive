@@ -38,3 +38,21 @@ def get_rotated_image(
     )
     print("shape4: " + str(ball_3d_image.shape))
     return ball_2d_image
+
+def test():
+    full_gray_image = "data/Images/log_cam2_last_strobed_img.png"
+    from ROI import run_hough_with_radius
+    from IsolateCode import isolate_ball
+    import cv2
+    test_img = cv2.imread(full_gray_image, cv2.IMREAD_GRAYSCALE)
+    best_ball1, _ = run_hough_with_radius(test_img)
+    ballimg = isolate_ball(test_img,best_ball1)
+    best_ball1.x = ballimg.shape[1] // 2
+    best_ball1.y = ballimg.shape[0] // 2
+    adjustedimg2 = get_rotated_image(ballimg, best_ball1, (6,0,-45))
+
+    cv2.imshow("Original", ballimg)
+    cv2.imshow("Predicted", adjustedimg2)
+    cv2.waitKey(0)
+
+
