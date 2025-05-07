@@ -70,8 +70,8 @@ def get_ball_rotation(
 
     print("step 3")
     # 3) Apply Gabor filters to pick out dimple edges
-    ball_image1 = cv2.equalizeHist(ball_image1)
-    ball_image2 = cv2.equalizeHist(ball_image2)
+    # ball_image1 = cv2.equalizeHist(ball_image1)
+    # ball_image2 = cv2.equalizeHist(ball_image2)
     edge1, calibrated_binary_threshold = apply_gabor_filter_image(ball_image1)
     edge2, calibrated_binary_threshold = apply_gabor_filter_image(ball_image2,calibrated_binary_threshold)
     cv2.imshow("Raw Edges 1 ", edge1)
@@ -114,7 +114,7 @@ def get_ball_rotation(
 
     adjustedimg1 = get_rotated_image(gaberRefRemoved1, best_ball1, tuple(delta))
     print(f"Adjusting rotation for camera view of ball 1 to offset (x,y,z)={delta[0]},{delta[1]},{delta[2]}")
-    cv2.imshow("Adjusted Image", adjustedimg1)
+    cv2.imshow("Final perspective-de-rotated filtered ball_image1DimpleEdges", adjustedimg1)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
     # time.sleep(909090)
@@ -125,7 +125,6 @@ def get_ball_rotation(
 
     adjustedimg2 = get_rotated_image(gaberRefRemoved2, best_ball2, tuple(delta2))
     print(f"Adjusting rotation for camera view of ball 2 to offset (x,y,z)={delta2[0]},{delta2[1]},{delta2[2]}")
-    cv2.imshow("Final perspective-de-rotated filtered ball_image1DimpleEdges", adjustedimg1)
     cv2.imshow("Final perspective-de-rotated filtered ball_image2DimpleEdges", adjustedimg2)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
@@ -137,12 +136,12 @@ def get_ball_rotation(
         y_start=COARSE_Y_START, y_end=COARSE_Y_END, y_inc=COARSE_Y_INC,
         z_start=COARSE_Z_START, z_end=COARSE_Z_END, z_inc=COARSE_Z_INC,
     )
-    output_mat, mat_size, candidates = generate_rotation_candidates(edge1_clean, coarse_space, best_ball1)
+    output_mat, mat_size, candidates = generate_rotation_candidates(edge1, coarse_space, best_ball1)
 
     print("step 8")
     comparison_csv_data = []
     best_candidate_index, comparison_csv_data = compare_candidate_angle_images(
-        adjustedimg2, output_mat, candidates, mat_size
+        edge2, output_mat, candidates, mat_size
     )
 
     rotation_result = np.array([0.0, 0.0, 0.0])
@@ -180,7 +179,7 @@ def get_ball_rotation(
         z_inc=1
     )
 
-    foutput_mat, fmat_size, fcandidates  = generate_rotation_candidates(edge1_clean, final_search_space, best_ball1)
+    foutput_mat, fmat_size, fcandidates  = generate_rotation_candidates(edge1, final_search_space, best_ball1)
     best_candidate_index, comparison_csv_data = compare_candidate_angle_images(
         adjustedimg2, foutput_mat, fcandidates, fmat_size
     )
@@ -215,40 +214,36 @@ def get_ball_rotation(
     cv2.imshow("Final rotated-by-best-angle originalBall1", result_bball2d_image)
     cv2.waitKey(0)
 
-    cv2.imshow("edge2", edge2_clean)
-    cv2.imshow("predict_edge2", apply_gabor_filter_image(result_bball2d_image))
-    cv2.waitKey(0)
-    print("step 11")
-        # Convert the best rotation angles from degrees to radians
-    spin_offset_angle_radians_x = np.radians(best_rot_x)
-    spin_offset_angle_radians_y = np.radians(best_rot_y)
-    spin_offset_angle_radians_z = np.radians(best_rot_z)
+    # print("step 11")
+    #     # Convert the best rotation angles from degrees to radians
+    # spin_offset_angle_radians_x = np.radians(best_rot_x)
+    # spin_offset_angle_radians_y = np.radians(best_rot_y)
+    # spin_offset_angle_radians_z = np.radians(best_rot_z)
 
-    # Perform the normalization to the real-world axes
-    normalized_rot_x = int(round(best_rot_x * np.cos(spin_offset_angle_radians_y) + best_rot_z * np.sin(spin_offset_angle_radians_y)))
-    normalized_rot_y = int(round(best_rot_y * np.cos(spin_offset_angle_radians_x) - best_rot_z * np.sin(spin_offset_angle_radians_x)))
-    normalized_rot_z = int(round(best_rot_z * np.cos(spin_offset_angle_radians_x) * np.cos(spin_offset_angle_radians_y)))
-    normalized_rot_z -= int(round(best_rot_y * np.sin(spin_offset_angle_radians_x)))
-    normalized_rot_z -= int(round(best_rot_x * np.sin(spin_offset_angle_radians_y)))
+    # # Perform the normalization to the real-world axes
+    # normalized_rot_x = int(round(best_rot_x * np.cos(spin_offset_angle_radians_y) + best_rot_z * np.sin(spin_offset_angle_radians_y)))
+    # normalized_rot_y = int(round(best_rot_y * np.cos(spin_offset_angle_radians_x) - best_rot_z * np.sin(spin_offset_angle_radians_x)))
+    # normalized_rot_z = int(round(best_rot_z * np.cos(spin_offset_angle_radians_x) * np.cos(spin_offset_angle_radians_y)))
+    # normalized_rot_z -= int(round(best_rot_y * np.sin(spin_offset_angle_radians_x)))
+    # normalized_rot_z -= int(round(best_rot_x * np.sin(spin_offset_angle_radians_y)))
 
-    # Looks like golf folks consider the X (side) spin to be positive if the surface is
-    # going from right to left. So we negate it here.
-    normalized_rot_x = -normalized_rot_x
+    # # Looks like golf folks consider the X (side) spin to be positive if the surface is
+    # # going from right to left. So we negate it here.
+    # normalized_rot_x = -normalized_rot_x
 
-    print("step 12")
-    result_bball2d_image = get_rotated_image(
-        ball_image1,
-        best_ball1,
-        (normalized_rot_x,normalized_rot_y,-normalized_rot_z)
-    )
-    cv2.imshow("Actual", ball_image2)
-    cv2.imshow("Final rotated-by-best-angle originalBall1", result_bball2d_image)
-    cv2.imshow("edge2", edge2_clean)
-    cv2.imshow("predict_edge2", apply_gabor_filter_image(result_bball2d_image))
-    cv2.waitKey(0)
+    # print("step 12")
+    # result_bball2d_image = get_rotated_image(
+    #     ball_image1,
+    #     best_ball1,
+    #     (normalized_rot_x,normalized_rot_y,-normalized_rot_z)
+    # )
+
+    # cv2.imshow("Actual", ball_image2)
+    # cv2.imshow("Final rotated-by-best-angle originalBall1", result_bball2d_image)
+    # cv2.waitKey(0)
 
     # Return the normalized rotation result
-    rotation_result = np.array([normalized_rot_x, normalized_rot_y, normalized_rot_z])
+    rotation_result = np.array([best_rot_x, best_rot_y, best_rot_z])
     return rotation_result
 
 if __name__ == '__main__':
