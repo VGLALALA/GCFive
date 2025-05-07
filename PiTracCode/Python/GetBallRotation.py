@@ -250,10 +250,20 @@ if __name__ == '__main__':
     multiprocessing.freeze_support()
     # Add your test code here
     
-    test_img_path = "data/Images/log_cam2_last_strobed_img.png"
+    test_img_path = "data/Images/12283_2023_442_Fig2_HTML.png"
     
     test_img = cv2.imread(test_img_path, cv2.IMREAD_GRAYSCALE)
     if test_img is not None:
-        print(get_ball_rotation(test_img))
+        best_rot_x, best_rot_y, best_rot_z = get_ball_rotation(test_img)
+        
+        # Assuming delta_t is the time difference between the two images in seconds
+        delta_t = 1/3000  # Example value, replace with actual delta t
+
+        # Calculate side spin and backspin in rpm
+        side_spin_rpm = (best_rot_x / delta_t) * (60 / 360)
+        back_spin_rpm = (best_rot_y / delta_t) * (60 / 360)
+
+        print(f"Side Spin: {side_spin_rpm} rpm")
+        print(f"Back Spin: {back_spin_rpm} rpm")
     else:
         print(f"Failed to load test image from: {test_img_path}")
