@@ -2,4 +2,5 @@
 
 .Images/CroppedBalls/
 .PiTracCode/__pycache__/
-.PiTracCode/Python/__pycache__
+.PiTracCode/Python/__pycache__/
+.PiTrac/

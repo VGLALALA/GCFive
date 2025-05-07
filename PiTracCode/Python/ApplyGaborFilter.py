@@ -1,14 +1,16 @@
 import cv2
 import numpy as np
-import math
-from typing import Tuple
 
-# Constants (tweak as needed)
-K_GABOR_MAX_WHITE_PERCENT = 44
+# Gabor white‐pixel percentage limits
 K_GABOR_MIN_WHITE_PERCENT = 38
+K_GABOR_MAX_WHITE_PERCENT = 44
 
-def create_gabor_kernel(ks: int, sigma: float, theta_deg: float,
-                        lambd: float, gamma: float, psi_deg: float) -> np.ndarray:
+def create_gabor_kernel(ks: int,
+                        sigma: float,
+                        theta_deg: float,
+                        lambd: float,
+                        gamma: float,
+                        psi_deg: float) -> np.ndarray:
     """
     Port of CreateGaborKernel:
       ks    – kernel size
@@ -25,64 +27,52 @@ def create_gabor_kernel(ks: int, sigma: float, theta_deg: float,
 
 
 def apply_test_gabor_filter(img_f32: np.ndarray,
-                            kernel_size: int, sigma: float,
-                            lambd: float, theta_deg: float,
-                            psi_deg: float, gamma: float,
-                            binary_threshold: float
-                           ) -> Tuple[np.ndarray,int]:
+                            kernel_size: int,
+                            sig: float,
+                            lm: float,
+                            th: float,
+                            ps: float,
+                            gm: float,
+                            binary_threshold: float) -> (np.ndarray, int):
     """
-    Port of ApplyTestGaborFilter:
-      img_f32          – float32 image normalized to [0,1]
-      kernel_size      – spatial size of Gabor kernel
-      sigma, lambd, theta_deg, psi_deg, gamma – Gabor params
-      binary_threshold – threshold *10 for final binarization
-    Returns:
-      dimple_edges     – binary (0/255) edge image
-      white_percent    – percentage of white pixels in that image
+    Apply a bank of rotated Gabor filters, threshold, and compute white‐pixel percentage.
+    Returns (binary_edge_image, white_percent).
     """
-    rows, cols = img_f32.shape[:2]
+    h, w = img_f32.shape[:2]
     accum = np.zeros_like(img_f32, dtype=np.float32)
-    dest  = np.zeros_like(accum)
+    theta_increment = 11.25
 
-    # Sweep orientations
-    theta_inc = 11.25
-    theta = 0.0
-    while theta < 360.0 + 1e-6:
-        kernel = create_gabor_kernel(kernel_size, sigma, theta, lambd, gamma, psi_deg)
-        cv2.filter2D(img_f32, cv2.CV_32F, kernel, dst=dest)
+    for theta in np.arange(0, 360.0 + 1e-6, theta_increment):
+        kernel = create_gabor_kernel(kernel_size, sig, theta, lm, gm, ps)
+        dest = cv2.filter2D(img_f32, cv2.CV_32F, kernel)
         np.maximum(accum, dest, out=accum)
-        theta += theta_inc
 
-    # Scale to 0–255 and convert to uint8
-    accum_gray = cv2.convertScaleAbs(accum, alpha=255.0)
+    # Convert accum to 8-bit
+    accum_gray = np.clip(accum * 255.0, 0, 255).astype(np.uint8)
+    edge_threshold_low = int(round(binary_threshold * 10.0))
+    _, dimple_edges = cv2.threshold(
+        accum_gray, edge_threshold_low, 255, cv2.THRESH_BINARY
+    )
 
-    # Threshold
-    edge_lo = int(round(binary_threshold * 10.0))
-    _, dimple_edges = cv2.threshold(accum_gray, edge_lo, 255, cv2.THRESH_BINARY)
-
-    # Compute white percentage
-    white_pixels = cv2.countNonZero(dimple_edges)
-    total_pixels = rows * cols
-    white_percent = int(round((white_pixels * 100.0) / total_pixels))
-
+    # Compute white‐pixel percentage
+    white_percent = int(round(
+        100.0 * cv2.countNonZero(dimple_edges) / (h * w)
+    ))
     return dimple_edges, white_percent
 
 
-def apply_gabor_filter_to_ball(image_gray: np.ndarray,
-                               prior_binary_threshold: float = -1.0
-                              ) -> Tuple[np.ndarray, float]:
+def apply_gabor_filter_image(image_gray: np.ndarray,
+                               prior_binary_threshold: float = -1.0) -> (np.ndarray, float):
     """
-    Port of ApplyGaborFilterToBall:
-      image_gray             – uint8 single-channel image
-      prior_binary_threshold – if >0, reuse as starting threshold
-    Returns:
-      dimple_edges           – final binary edge image
-      calibrated_threshold   – the binary_threshold used in final pass
+    Mimics ApplyGaborFilterToBall. Returns (edge_image, calibrated_threshold).
     """
-    # Convert to float32 [0,1]
+    # ensure grayscale
+    assert image_gray.ndim == 2 and image_gray.dtype == np.uint8
+
+    # normalize to [0,1]
     img_f32 = image_gray.astype(np.float32) / 255.0
 
-    # Default Gabor parameters (non-equalized branch)
+    # default "pos_" parameters (tweak as desired)
     kernel_size = 21
     pos_sigma  = 2
     pos_lambda = 6
@@ -91,74 +81,46 @@ def apply_gabor_filter_to_ball(image_gray: np.ndarray,
     pos_psi    = 27
     binary_threshold = 8.5
 
-    # Override if provided
     if prior_binary_threshold > 0:
         binary_threshold = prior_binary_threshold
 
-    # Compute derived params
-    sigma = pos_sigma / 2.0
-    lambd = float(pos_lambda)
-    theta = float(pos_th) * 2.0
-    psi   = float(pos_psi) * 10.0
-    gamma = pos_gamma / 20.0
+    sig = pos_sigma / 2.0
+    lm  = float(pos_lambda)
+    th  = float(pos_th) * 2.0
+    ps  = float(pos_psi) * 10.0
+    gm  = pos_gamma / 20.0
 
-    # First Gabor pass
-    dimple_edges, white_percent = apply_test_gabor_filter(
-        img_f32, kernel_size, sigma, lambd, theta, psi, gamma, binary_threshold
+    # first pass
+    dimple_img, white_percent = apply_test_gabor_filter(
+        img_f32, kernel_size, sig, lm, th, ps, gm, binary_threshold
     )
 
-    # Adjust threshold if too few/too many white pixels
-    calibrated_threshold = binary_threshold
+    # if out of bounds and no prior override, adjust threshold
     if prior_binary_threshold < 0 and (
         white_percent < K_GABOR_MIN_WHITE_PERCENT
         or white_percent >= K_GABOR_MAX_WHITE_PERCENT
     ):
         ratchet_down = (white_percent < K_GABOR_MIN_WHITE_PERCENT)
-        # Loop until within desired white-range or limits reached
-        while (white_percent < K_GABOR_MIN_WHITE_PERCENT
-               or white_percent >= K_GABOR_MAX_WHITE_PERCENT):
-            # Adjust by 1.0 or 0.5 depending on distance
-            delta = 1.0 if abs(white_percent - (K_GABOR_MIN_WHITE_PERCENT if ratchet_down else K_GABOR_MAX_WHITE_PERCENT)) > 5 else 0.5
-            calibrated_threshold += -delta if ratchet_down else delta
 
-            # Re-run
-            dimple_edges, white_percent = apply_test_gabor_filter(
-                img_f32, kernel_size, sigma, lambd, theta, psi, gamma, calibrated_threshold
-            )
+        while (
+            white_percent < K_GABOR_MIN_WHITE_PERCENT
+            or white_percent >= K_GABOR_MAX_WHITE_PERCENT
+        ):
+            # step size
+            delta = 1.0 if abs((ratchet_down and K_GABOR_MIN_WHITE_PERCENT - white_percent) or
+                               (not ratchet_down and white_percent - K_GABOR_MAX_WHITE_PERCENT)) > 5 else 0.5
+            binary_threshold += -delta if ratchet_down else +delta
 
-            # Break if threshold out of bounds
-            if not (2.0 <= calibrated_threshold <= 30.0):
-                print(f"Warning: Gabor binary_threshold reached limit: {calibrated_threshold}")
+            # clamp to avoid infinite loop
+            if not (2.0 <= binary_threshold <= 30.0):
                 break
 
-    return dimple_edges, calibrated_threshold
+            dimple_img, white_percent = apply_test_gabor_filter(
+                img_f32, kernel_size, sig, lm, th, ps, gm, binary_threshold
+            )
 
+        calibrated_binary_threshold = binary_threshold
+    else:
+        calibrated_binary_threshold = binary_threshold
 
-def apply_gabor_filter_image(image_gray: np.ndarray) -> np.ndarray:
-    """
-    Takes a grayscale image and returns the Gabor-filtered binary edge image.
-    """
-    # Convert to float32 [0,1]
-    img_f32 = image_gray.astype(np.float32) / 255.0
-
-    # Default Gabor parameters (non-equalized branch)
-    kernel_size = 21
-    pos_sigma  = 2
-    pos_lambda = 6
-    pos_gamma  = 4
-    pos_th     = 60
-    pos_psi    = 27
-    binary_threshold = 15
-
-    # Compute derived params
-    sigma = pos_sigma / 2.0
-    lambd = float(pos_lambda)
-    theta = float(pos_th) * 2.0
-    psi   = float(pos_psi) * 10.0
-    gamma = pos_gamma / 20.0
-
-    # First Gabor pass
-    dimple_edges, _ = apply_test_gabor_filter(
-        img_f32, kernel_size, sigma, lambd, theta, psi, gamma, binary_threshold
-    )
-    return dimple_edges
+    return dimple_img, calibrated_binary_threshold

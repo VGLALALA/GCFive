@@ -11,7 +11,7 @@ from matchBallSize import match_ball_image_sizes
 from RotationSearchSpace import RotationSearchSpace
 from ROI import run_hough_with_radius
 from CompareCandidateAngleImage import compare_candidate_angle_images
-from ApplyGaborFilter import apply_gabor_filter_image, apply_gabor_filter_to_ball
+from ApplyGaborFilter import apply_gabor_filter_image
 import time
 import os
 from concurrent.futures import ThreadPoolExecutor
@@ -72,32 +72,19 @@ def get_ball_rotation(
     # 3) Apply Gabor filters to pick out dimple edges
     ball_image1 = cv2.equalizeHist(ball_image1)
     ball_image2 = cv2.equalizeHist(ball_image2)
-
-    with ThreadPoolExecutor() as executor:
-        edge1_future = executor.submit(apply_gabor_filter_image, ball_image1)
-        edge2_future = executor.submit(apply_gabor_filter_image, ball_image2)
-        edge1 = edge1_future.result()
-        edge2 = edge2_future.result()
-    
-    # Clean up the edge maps
-    kernel = np.ones((1, 1), np.uint8)
-    edge1_clean = cv2.morphologyEx(edge1, cv2.MORPH_OPEN, kernel)
-    edge1_clean = cv2.morphologyEx(edge1_clean, cv2.MORPH_CLOSE, kernel)
-    edge2_clean = cv2.morphologyEx(edge2, cv2.MORPH_OPEN, kernel)
-    edge2_clean = cv2.morphologyEx(edge2_clean, cv2.MORPH_CLOSE, kernel)
-    cv2.imshow("Gabor Edges 1 (clean)", edge1_clean)
-    cv2.imshow("Gabor Edges 2 (clean)", edge2_clean)
+    edge1, calibrated_binary_threshold = apply_gabor_filter_image(ball_image1)
+    edge2, calibrated_binary_threshold = apply_gabor_filter_image(ball_image2,calibrated_binary_threshold)
+    cv2.imshow("Raw Edges 1 ", edge1)
+    cv2.imshow("Raw Edges 2 ", edge2)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+    # Clean up the edge maps
 
     print("step 4")
 
     # 4) Remove specular reflections
-    with ThreadPoolExecutor() as executor:
-        gaberRefRemoved1_future = executor.submit(remove_reflections, ball_image1, edge1_clean)
-        gaberRefRemoved2_future = executor.submit(remove_reflections, ball_image2, edge2_clean)
-        gaberRefRemoved1 = gaberRefRemoved1_future.result()
-        gaberRefRemoved2 = gaberRefRemoved2_future.result()
+    gaberRefRemoved1 = remove_reflections(ball_image1, edge1)
+    gaberRefRemoved2 = remove_reflections(ball_image2, edge2)
 
     cv2.imshow("RemoveReflection 1", gaberRefRemoved1)
     cv2.imshow("RemoveReflection 2", gaberRefRemoved2)
@@ -107,11 +94,8 @@ def get_ball_rotation(
     # 5) Mask out everything outside the ball's circle
     print("step 5")
     FINAL_MASK_FACTOR = 0.92
-    with ThreadPoolExecutor() as executor:
-        gaberRefRemoved1_future = executor.submit(mask_area_outside_ball, gaberRefRemoved1, best_ball1, FINAL_MASK_FACTOR, (255, 255, 255))
-        gaberRefRemoved2_future = executor.submit(mask_area_outside_ball, gaberRefRemoved2, best_ball2, FINAL_MASK_FACTOR, (255, 255, 255))
-        gaberRefRemoved1 = gaberRefRemoved1_future.result()
-        gaberRefRemoved2 = gaberRefRemoved2_future.result()
+    gaberRefRemoved1 = mask_area_outside_ball(gaberRefRemoved1, best_ball1, FINAL_MASK_FACTOR, (255, 255, 255))
+    gaberRefRemoved2 = mask_area_outside_ball(gaberRefRemoved2, best_ball2, FINAL_MASK_FACTOR, (255, 255, 255))
 
     cv2.imshow("Mask 1", gaberRefRemoved1)
     cv2.imshow("Mask 2", gaberRefRemoved2)
@@ -227,9 +211,12 @@ def get_ball_rotation(
         best_ball1,
         (best_rot_x,best_rot_y,best_rot_z)
     )
-    cv2.imshow("Original", ball_image1)
     cv2.imshow("Actual", ball_image2)
     cv2.imshow("Final rotated-by-best-angle originalBall1", result_bball2d_image)
+    cv2.waitKey(0)
+
+    cv2.imshow("edge2", edge2_clean)
+    cv2.imshow("predict_edge2", apply_gabor_filter_image(result_bball2d_image))
     cv2.waitKey(0)
     print("step 11")
         # Convert the best rotation angles from degrees to radians
@@ -254,9 +241,10 @@ def get_ball_rotation(
         best_ball1,
         (normalized_rot_x,normalized_rot_y,-normalized_rot_z)
     )
-    cv2.imshow("Original", ball_image1)
     cv2.imshow("Actual", ball_image2)
     cv2.imshow("Final rotated-by-best-angle originalBall1", result_bball2d_image)
+    cv2.imshow("edge2", edge2_clean)
+    cv2.imshow("predict_edge2", apply_gabor_filter_image(result_bball2d_image))
     cv2.waitKey(0)
 
     # Return the normalized rotation result
@@ -267,7 +255,7 @@ if __name__ == '__main__':
     multiprocessing.freeze_support()
     # Add your test code here
     
-    test_img_path = r"C:\Users\theka\Downloads\GCFive\data\Images\gs_log_img__log_ball_final_found_ball_img.png"
+    test_img_path = "data/Images/log_cam2_last_strobed_img.png"
     
     test_img = cv2.imread(test_img_path, cv2.IMREAD_GRAYSCALE)
     if test_img is not None:

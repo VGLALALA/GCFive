@@ -49,10 +49,10 @@ def test():
     ballimg = isolate_ball(test_img,best_ball1)
     best_ball1.x = ballimg.shape[1] // 2
     best_ball1.y = ballimg.shape[0] // 2
-    adjustedimg2 = get_rotated_image(ballimg, best_ball1, (6,0,-45))
+    adjustedimg2 = get_rotated_image(ballimg, best_ball1, (3,0,-30))
 
     cv2.imshow("Original", ballimg)
     cv2.imshow("Predicted", adjustedimg2)
     cv2.waitKey(0)
 
-
+# test()
