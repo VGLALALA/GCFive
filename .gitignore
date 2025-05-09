@@ -1,6 +1,12 @@
+# Ignore virtual environment
 .venv/
 
+# Ignore image output
 .Images/CroppedBalls/
-.PiTracCode/__pycache__/
-.PiTracCode/Python/__pycache__/
-.PiTrac/
+
+# Ignore __pycache__ everywhere (no need to specify subpaths manually)
+__pycache__/
+
+
+# Optional: ignore compiled Python files
+*.py[cod]

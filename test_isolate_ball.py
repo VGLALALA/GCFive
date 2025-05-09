@@ -13,9 +13,12 @@ def test_isolate_ball():
         return
     
     # Create a dummy GolfBall object with necessary attributes
-    ball = GolfBall()
-    ball.center = (image.shape[1]//2, image.shape[0]//2)  # Center of image
-    ball.radius = 50  # Approximate radius
+    ball = GolfBall(
+        x=image.shape[1]//2,
+        y=image.shape[0]//2,
+        measured_radius_pixels=50,
+        angles_camera_ortho_perspective=(0.0, 0.0, 0.0)
+    )
     
     # Test the isolate_ball function
     ball_image, local_ball = isolate_ball(image, ball)
@@ -28,17 +31,20 @@ def test_isolate_ball():
     
     # Print information about the isolated ball
     print(f"Isolated ball shape: {ball_image.shape}")
-    print(f"Local ball center: {local_ball.center}")
-    print(f"Local ball radius: {local_ball.radius}")
+    print(f"Local ball center: ({local_ball.x}, {local_ball.y})")
+    print(f"Local ball radius: {local_ball.measured_radius_pixels}")
 
 if __name__ == "__main__":
     test_isolate_ball()
 
 # Quick test
 image = cv2.imread(r"C:\Users\theka\Downloads\GCFive\Images\gs_log_img__log_ball_final_found_ball_img.png", cv2.IMREAD_GRAYSCALE)
-ball = GolfBall()
-ball.center = (image.shape[1]//2, image.shape[0]//2)
-ball.radius = 50
+ball = GolfBall(
+    x=image.shape[1]//2,
+    y=image.shape[0]//2,
+    measured_radius_pixels=50,
+    angles_camera_ortho_perspective=(0.0, 0.0, 0.0)
+)
 ball_image, _ = isolate_ball(image, ball)
 cv2.imshow("Quick Test", ball_image)
 cv2.waitKey(0)
