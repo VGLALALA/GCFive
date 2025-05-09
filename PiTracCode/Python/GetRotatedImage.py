@@ -47,12 +47,12 @@ def test():
     test_img = cv2.imread(full_gray_image, cv2.IMREAD_GRAYSCALE)
     best_ball1, _ = run_hough_with_radius(test_img)
     ballimg = isolate_ball(test_img,best_ball1)
+    from ImageCompressor import compress_image
+    #compress_ballimg = compress_image(ballimg,4.0)
     best_ball1.x = ballimg.shape[1] // 2
     best_ball1.y = ballimg.shape[0] // 2
-    adjustedimg2 = get_rotated_image(ballimg, best_ball1, (3,0,-30))
+    adjustedimg2 = get_rotated_image(ballimg, best_ball1, (0,30,-30))
 
     cv2.imshow("Original", ballimg)
     cv2.imshow("Predicted", adjustedimg2)
     cv2.waitKey(0)
-
-# test()

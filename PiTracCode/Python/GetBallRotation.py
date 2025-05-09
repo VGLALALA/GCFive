@@ -12,10 +12,11 @@ from RotationSearchSpace import RotationSearchSpace
 from ROI import run_hough_with_radius
 from CompareCandidateAngleImage import compare_candidate_angle_images
 from ApplyGaborFilter import apply_gabor_filter_image
+from ImageCompressor import compress_image
 import time
 import os
-from concurrent.futures import ThreadPoolExecutor
 import multiprocessing
+from GradientDescent import optimize_rotation
 
 COARSE_X_INC   = 6
 COARSE_X_START = -42
@@ -54,32 +55,29 @@ def get_ball_rotation(
     cv2.imshow("Isolated Ball 2", ball_image2)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-    cv2.imshow("Ball Image 1", ball_image1)
-    cv2.imshow("Ball Image 2", ball_image2)
-    cv2.waitKey(0)
+    
     # Update the center coordinates of best_ball1 and best_ball2
     best_ball1.x = ball_image1.shape[1] // 2
     best_ball1.y = ball_image1.shape[0] // 2
 
     best_ball2.x = ball_image2.shape[1] // 2
     best_ball2.y = ball_image2.shape[0] // 2
-    # --- END TEST ---
+
     print("step 2")
     # 2) Resize so both crops are the same size
     ball_image1, ball_image2 = match_ball_image_sizes(ball_image1, ball_image2)
 
     print("step 3")
     # 3) Apply Gabor filters to pick out dimple edges
-    # ball_image1 = cv2.equalizeHist(ball_image1)
-    # ball_image2 = cv2.equalizeHist(ball_image2)
+    ball_image1 = cv2.equalizeHist(ball_image1)
+    ball_image2 = cv2.equalizeHist(ball_image2)
     edge1, calibrated_binary_threshold = apply_gabor_filter_image(ball_image1)
-    edge2, calibrated_binary_threshold = apply_gabor_filter_image(ball_image2,calibrated_binary_threshold)
-    cv2.imshow("Raw Edges 1 ", edge1)
-    cv2.imshow("Raw Edges 2 ", edge2)
+    edge2, calibrated_binary_threshold = apply_gabor_filter_image(ball_image2, calibrated_binary_threshold)
+    cv2.imshow("Compress Raw Edges 1 ", edge1)
+    cv2.imshow("Compress Raw Edges 2 ", edge2)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-    # Clean up the edge maps
-
+    
     print("step 4")
 
     # 4) Remove specular reflections
@@ -129,13 +127,14 @@ def get_ball_rotation(
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
+
     # 7) Coarse-search for best 3D rotation that aligns edges1 → edges2
-    print("step 7")
     coarse_space = RotationSearchSpace(
         x_start=COARSE_X_START, x_end=COARSE_X_END, x_inc=COARSE_X_INC,
         y_start=COARSE_Y_START, y_end=COARSE_Y_END, y_inc=COARSE_Y_INC,
         z_start=COARSE_Z_START, z_end=COARSE_Z_END, z_inc=COARSE_Z_INC,
     )
+
     output_mat, mat_size, candidates = generate_rotation_candidates(edge1, coarse_space, best_ball1)
 
     print("step 8")
@@ -250,14 +249,17 @@ if __name__ == '__main__':
     multiprocessing.freeze_support()
     # Add your test code here
     
-    test_img_path = "data/Images/12283_2023_442_Fig2_HTML.png"
+    # Load parameters from HyperParameter.json
+    import json
+    with open('PiTracCode/Python/HyperParameter.json', 'r') as file:
+        params = json.load(file)
     
+    test_img_path = params.get("image_path", "data/Images/log_cam2_last_strobed_img.png")
+    delta_t = params.get("delta_t", 1/3000)  # Default to 1/3000 if not found
+
     test_img = cv2.imread(test_img_path, cv2.IMREAD_GRAYSCALE)
     if test_img is not None:
         best_rot_x, best_rot_y, best_rot_z = get_ball_rotation(test_img)
-        
-        # Assuming delta_t is the time difference between the two images in seconds
-        delta_t = 1/3000  # Example value, replace with actual delta t
 
         # Calculate side spin and backspin in rpm
         side_spin_rpm = (best_rot_x / delta_t) * (60 / 360)
