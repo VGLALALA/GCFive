@@ -82,4 +82,10 @@ def run_hough_with_radius(image):
     else:
         print("No circles detected.")
     
-    return best_balls if len(best_balls) == 2 else None
+    return best_balls if len(best_balls) == 2 else None, display_img
+if __name__ == '__main__':
+    test_img_path = "data/Images/12283_2023_442_Fig2_HTML.png"
+    test_img = cv2.imread(test_img_path, cv2.IMREAD_GRAYSCALE)
+    data, displayimg = run_hough_with_radius(test_img)
+    cv2.imshow("test", displayimg)
+    cv2.waitKey(0)

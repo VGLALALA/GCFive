@@ -27,6 +27,9 @@ def compare_candidate_angle_images(
         best_index: index of the best candidate.
         comparison_csv_data: list of TSV strings for each candidate.
     """
+    # Print the shape of the target image
+    print(f"Shape of target_image: {target_image.shape}")
+
     # candidate_elements_mat is a 3D array of indices into candidates list
     # Get dimensions for iteration
     xSize, ySize, zSize = candidate_size
@@ -42,6 +45,7 @@ def compare_candidate_angle_images(
                 for z in range(zSize):
                     idx = int(candidate_elements_mat[x, y, z])
                     c = candidates[idx]
+                    print(f"Shape of c.img: {c.img.shape}")
                     pm, pe, _ = compare_rotation_image(target_image, c.img, c.index)
                     c.pixels_matching = pm
                     c.pixels_examined = pe
@@ -55,6 +59,7 @@ def compare_candidate_angle_images(
         for idx_flat in np.ndindex(candidate_elements_mat.shape):
             idx = int(candidate_elements_mat[idx_flat])
             c = candidates[idx]
+            print(f"Shape of c.img: {c.img.shape}")
             pm, pe, _ = compare_rotation_image(target_image, c.img, c.index)
             c.pixels_matching = pm
             c.pixels_examined = pe

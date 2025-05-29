@@ -5,7 +5,7 @@ import numpy as np
 class RotationCandidate:
     index: int
     img: np.ndarray
-    x_rotation_degrees: int
-    y_rotation_degrees: int
-    z_rotation_degrees: int
+    x_rotation_degrees: float
+    y_rotation_degrees: float
+    z_rotation_degrees: float
     score: float = 0.0
