@@ -17,8 +17,14 @@ def isolate_ball(
     Returns:
         ball_crop: Cropped image of the ball.
     """
-    # Auto-detect if needed
-    if not getattr(ball, 'x', None) or not getattr(ball, 'y', None) or not getattr(ball, 'measured_radius_pixels', None):
+    # Auto-detect if needed. The original implementation treated zero values as
+    # missing which caused valid coordinates near the image origin to trigger
+    # detection again. Only ``None`` should be considered "missing".
+    if (
+        getattr(ball, "x", None) is None
+        or getattr(ball, "y", None) is None
+        or getattr(ball, "measured_radius_pixels", None) is None
+    ):
         circles = cv2.HoughCircles(
             img, cv2.HOUGH_GRADIENT, dp=1.2, minDist=50,
             param1=100, param2=30, minRadius=30, maxRadius=70
@@ -33,10 +39,10 @@ def isolate_ball(
             raise ValueError("No ball detected in image!")
 
     # Compute crop dimensions
-    r = ball.measured_radius_pixels
-    x1 = int(ball.x - r)
-    y1 = int(ball.y - r)
-    w = h = 2 * r
+    r = int(round(ball.measured_radius_pixels))
+    x1 = int(round(ball.x - r))
+    y1 = int(round(ball.y - r))
+    w = h = int(2 * r)
 
     # Clip to image bounds
     x1 = max(0, min(x1, img.shape[1] - w - 1))
