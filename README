@@ -14,8 +14,8 @@ Installation Packages Corresponding to Different Operating Systems
     MVS-2.1.2_i386_20221024.tar.gz
 	
 Note:
-1. Select the corresponding installation pacakage according to your system name. You can enter "uname -a" in the terminal to check the system name. For example, if "aarch64" is included in the output, choose the aarch64 package.
-2. The .deb pacakge needs to be installed with dpkg command, which is mainly used in systems like Ubuntu.
+1. Select the corresponding installation package according to your system name. You can enter "uname -a" in the terminal to check the system name. For example, if "aarch64" is included in the output, choose the aarch64 package.
+2. The .deb package needs to be installed with dpkg command, which is mainly used in systems like Ubuntu.
 3. The .tar.gz package is a compressed package. You need to first unzip it with tar command and then install it with setup.sh script. 
 
 
