@@ -4,6 +4,7 @@ import numpy as np
 from .vector import vec3, length, normalized, cross, dot
 
 
+
 @dataclass
 class Ball:
     position: np.ndarray = field(default_factory=lambda: vec3())
@@ -112,7 +113,6 @@ class Ball:
         if next_pos[1] < 0.0 and self.velocity[1] < 0:
             self.velocity = self.bounce(self.velocity, vec3(0.0, 1.0, 0.0))
             next_pos[1] = 0.0
-            # damp very small bounces so the ball can come to rest
             if abs(self.velocity[1]) < 0.05:
                 self.velocity[1] = 0.0
                 if length(self.velocity) < 0.1:

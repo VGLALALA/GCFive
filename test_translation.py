@@ -37,4 +37,3 @@ def test_ball_eventually_rests():
         b.update(0.01)
     assert b.position[1] == 0.0
     assert np.linalg.norm(b.velocity) == 0.0
-
