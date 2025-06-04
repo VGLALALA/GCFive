@@ -9,22 +9,22 @@ class Ball:
     velocity: np.ndarray = field(default_factory=lambda: vec3())
     omega: np.ndarray = field(default_factory=lambda: vec3())
 
-    mass: float = 0.04592623
-    radius: float = 0.021335
+    mass: float = 0.04592623  # mass of the ball in kilograms
+    radius: float = 0.021335  # radius of the ball in meters
     A: float = field(init=False)  # cross-sectional area
     I: float = field(init=False)  # moment of inertia
-    u_k: float = 0.4  # friction coefficient
-    u_kr: float = 0.2
+    u_k: float = 0.4  # kinetic friction coefficient
+    u_kr: float = 0.2  # rolling friction coefficient
 
-    rho: float = 1.225
-    nu: float = 0.00001789
-    nu_k: float = 0.0000146
-    nu_g: float = 0.0012
+    rho: float = 1.225  # air density in kg/m^3
+    nu: float = 0.00001789  # kinematic viscosity of air in m^2/s
+    nu_k: float = 0.0000146  # kinematic viscosity for kinetic friction in m^2/s
+    nu_g: float = 0.0012  # kinematic viscosity for ground interaction in m^2/s
 
-    position_list: list = field(default_factory=list)
+    position_list: list = field(default_factory=list)  # list to store position history
     total_position_list: list = field(default_factory=list)
 
-    def __post_init__(self):
+    def __post_init__(self):    
         self.A = np.pi * self.radius ** 2
         self.I = 0.4 * self.mass * self.radius ** 2
 

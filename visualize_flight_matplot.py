@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import os
 from datetime import datetime
 
-from JaySimG_translation.ball import Ball
+from trajectory_simulation.ball import Ball
 
 
 def simulate_shot(data, delta=0.01, max_time=20.0):
