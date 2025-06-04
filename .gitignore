@@ -10,3 +10,5 @@ __pycache__/
 
 # Optional: ignore compiled Python files
 *.py[cod]
+
+.results/

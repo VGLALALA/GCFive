@@ -3,8 +3,6 @@ from typing import Tuple
 import numpy as np
 from .vector import vec3, length, normalized, cross, dot
 
-
-
 @dataclass
 class Ball:
     position: np.ndarray = field(default_factory=lambda: vec3())
@@ -23,6 +21,9 @@ class Ball:
     nu_k: float = 0.0000146
     nu_g: float = 0.0012
 
+    position_list: list = field(default_factory=list)
+    total_position_list: list = field(default_factory=list)
+
     def __post_init__(self):
         self.A = np.pi * self.radius ** 2
         self.I = 0.4 * self.mass * self.radius ** 2
@@ -31,6 +32,8 @@ class Ball:
         self.position[:] = vec3(0.0, 0.1, 0.0)
         self.velocity[:] = vec3()
         self.omega[:] = vec3()
+        self.position_list.clear()
+        self.total_position_list.clear()
 
     def hit(self):
         self.position[:] = vec3()
@@ -110,7 +113,9 @@ class Ball:
 
         # simple ground collision
         next_pos = self.position + self.velocity * delta
+        self.total_position_list.append(next_pos.copy())
         if next_pos[1] < 0.0 and self.velocity[1] < 0:
+            self.position_list.append(self.position.copy())
             self.velocity = self.bounce(self.velocity, vec3(0.0, 1.0, 0.0))
             next_pos[1] = 0.0
             if abs(self.velocity[1]) < 0.05:
@@ -148,18 +153,15 @@ class Ball:
         self.omega = omg_norm + omg_orth
         return vel_norm + vel_orth
 
-
 def project(v, n):
     n_norm = normalized(n)
     return n_norm * dot(v, n_norm)
-
 
 def angle_between(a, b):
     a_n = normalized(a)
     b_n = normalized(b)
     dot_val = np.clip(dot(a_n, b_n), -1.0, 1.0)
     return np.arccos(dot_val)
-
 
 def limit_length(v, l):
     cur = length(v)
@@ -168,7 +170,6 @@ def limit_length(v, l):
     if cur > abs(l):
         return normalized(v) * l
     return v
-
 
 def rotation_matrix(axis, angle):
     axis = normalized(axis)
