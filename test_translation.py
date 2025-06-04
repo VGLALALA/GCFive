@@ -28,3 +28,13 @@ def test_ball_hit_from_data_move():
     b.hit_from_data(data)
     b.update(0.1)
     assert not np.allclose(b.position[[0, 2]], 0.0)
+
+
+def test_ball_eventually_rests():
+    b = Ball()
+    b.hit()
+    for _ in range(2000):
+        b.update(0.01)
+    assert b.position[1] == 0.0
+    assert np.linalg.norm(b.velocity) == 0.0
+
