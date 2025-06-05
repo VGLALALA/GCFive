@@ -11,4 +11,23 @@ __pycache__/
 # Optional: ignore compiled Python files
 *.py[cod]
 
-.results/
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.tiff
+*.ico
+*.webp
+
+*.mp4
+*.avi
+*.mov
+*.wmv
+*.flv
+*.mkv
+*.webm
+*.mp3
+*.wav
+*.ogg
+
