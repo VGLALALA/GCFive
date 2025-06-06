@@ -25,11 +25,34 @@ def simulate_shot(data, delta=0.01, max_time=20.0):
     return np.array(positions), time
 
 
-def calculate_descending_angle(positions, before_rolling_index):
-    if len(positions) < 2:
+def calculate_descending_angle(positions, landing_index):
+    """Calculate descending angle using trajectory just *before* first bounce.
+
+    Parameters
+    ----------
+    positions : np.ndarray
+        Array of ball positions over time.
+    landing_index : int
+        Index of the first sample where the ball touches the ground.
+
+    Returns
+    -------
+    float
+        Descending angle in degrees.
+    """
+
+    # Need at least two samples prior to impact to compute a slope.
+    if landing_index < 2:
         return 0.0
-    delta_xz = positions[before_rolling_index][[0, 2]] - positions[before_rolling_index - 1][[0, 2]]
-    delta_y = positions[before_rolling_index][1] - positions[before_rolling_index - 1][1]
+
+    # Use the last step before ground contact to avoid using the post-bounce
+    # position which results in an artificially shallow angle.
+    prev_pos = positions[landing_index - 1]
+    prev_prev_pos = positions[landing_index - 2]
+
+    delta_xz = prev_pos[[0, 2]] - prev_prev_pos[[0, 2]]
+    delta_y = prev_pos[1] - prev_prev_pos[1]
+
     angle_rad = np.arctan2(-delta_y, np.linalg.norm(delta_xz))
     return np.degrees(angle_rad)
 
