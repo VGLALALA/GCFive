@@ -115,11 +115,11 @@ def simulate_realtime_view(data, view='3d', delta=0.01, max_time=20.0, fps=30, z
 
 def main():
     data = {
-        "Speed": 185.5,
-        "VLA": 12,
-        "HLA": 1.1,
-        "TotalSpin": 2500.0,
-        "SpinAxis": 0.5,
+        "Speed": 171,
+        "VLA": 10.4,
+        "HLA": 0,
+        "TotalSpin": 2545.0,
+        "SpinAxis": 0,
     }
 
     positions, flight_time = simulate_shot(data)
