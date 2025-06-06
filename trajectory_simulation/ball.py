@@ -17,8 +17,8 @@ class Ball:
     u_kr: float = 0.2  # rolling friction coefficient
 
     rho: float = 1.225  # air density in kg/m^3
-    nu: float = 0.00001789  # kinematic viscosity of air in m^2/s
-    nu_k: float = 0.0000146  # kinematic viscosity for kinetic friction in m^2/s
+    mu: float = 0.00001802  # dynamic viscosity of air in kg/(m·s)
+    nu: float = 0.00001470  # kinematic viscosity of air in m^2/s
     nu_g: float = 0.0012  # kinematic viscosity for ground interaction in m^2/s
 
     position_list: list = field(default_factory=list)  # list to store position history
@@ -95,15 +95,17 @@ class Ball:
             spin = 0.0
             if speed > 0.5:
                 spin = length(self.omega) * self.radius / speed
-            Re = speed * self.radius * 2.0 / self.nu_k
-            S = 0.5 * self.rho * np.pi * self.radius ** 3 * (-2.4 * spin + 1.75)
-            if Re < 87500.0:
-                Cd = 0.000000000129 * Re ** 2 - 0.0000259 * Re + 1.50
+            Re = self.rho * speed * self.radius * 2.0 / self.mu
+            S = 0.5 * self.rho * self.A * self.radius * (-3.25 * spin + 1.99)
+            if Re < 50000.0:
+                Cd = 0.6
+            elif Re < 87500.0:
+                Cd = 0.000000000129 * Re ** 2 - 0.0000225 * Re + 1.50
             else:
-                Cd = 0.0000000000191 * Re ** 2 - 0.0000054 * Re + 0.56
+                Cd = 0.00000000001925 * Re ** 2 - 0.0000052 * Re + 0.56
             F_m = cross(self.omega, self.velocity) * S
-            T_d = -8.0 * np.pi * self.nu * self.radius ** 3 * self.omega
-            F_d = -self.velocity * speed * Cd * self.rho * self.A / 2.0 * 1.3
+            T_d = -8.0 * np.pi * self.mu * self.radius ** 3 * self.omega
+            F_d = -self.velocity * speed * Cd * self.rho * self.A / 2.0
 
         F = F_g + F_d + F_m + F_f + F_gd
         T = T_d + T_f + T_g
