@@ -21,6 +21,18 @@ class Ball:
     nu: float = 0.00001470  # kinematic viscosity of air in m^2/s
     nu_g: float = 0.0012  # kinematic viscosity for ground interaction in m^2/s
 
+    # Coefficients for drag curve
+    cd_mid_a: float = 0.000000000129
+    cd_mid_b: float = -0.0000225
+    cd_mid_c: float = 1.50
+    cd_high_a: float = 0.00000000001925
+    cd_high_b: float = -0.0000052
+    cd_high_c: float = 0.56
+
+    # Tuning factors for aerodynamic model
+    drag_scale: float = 1.0
+    lift_scale: float = 1.0
+
     position_list: list = field(default_factory=list)  # list to store position history
     total_position_list: list = field(default_factory=list)
 
@@ -100,9 +112,11 @@ class Ball:
             if Re < 50000.0:
                 Cd = 0.6
             elif Re < 87500.0:
-                Cd = 0.000000000129 * Re ** 2 - 0.0000225 * Re + 1.50
+                Cd = self.cd_mid_a * Re ** 2 + self.cd_mid_b * Re + self.cd_mid_c
             else:
-                Cd = 0.00000000001925 * Re ** 2 - 0.0000052 * Re + 0.56
+                Cd = self.cd_high_a * Re ** 2 + self.cd_high_b * Re + self.cd_high_c
+            Cd *= self.drag_scale
+            S *= self.lift_scale
             F_m = cross(self.omega, self.velocity) * S
             T_d = -8.0 * np.pi * self.mu * self.radius ** 3 * self.omega
             F_d = -self.velocity * speed * Cd * self.rho * self.A / 2.0
