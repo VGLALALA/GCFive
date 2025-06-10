@@ -112,11 +112,11 @@ def loss(params: np.ndarray, shots: List[Dict[str, Optional[float]]]) -> float:
 
 def main():
     parser = argparse.ArgumentParser(description="Tune physics model parameters using real shots")
-    parser.add_argument("csv_file", help="CSV file with shot data")
-    parser.add_argument("--log-dir", default="train_logs", help="Directory to store training logs")
+    parser.add_argument("--path", help="CSV file with shot data")
+    parser.add_argument("--log-dir", default="results/train_log", help="Directory to store training logs")
     args = parser.parse_args()
 
-    shots = load_dataset(args.csv_file)
+    shots = load_dataset(args.path)  # Corrected from args.csv_file to args.path
     if not shots:
         print("No valid shots found in dataset")
         return
@@ -137,6 +137,7 @@ def main():
         (1e-11, 5e-11), (-1e-4, 0.0), (0.3, 0.8),  # cd_high
     ]
 
+    print("Starting optimization...")
     result = minimize(loss, x0=initial, args=(shots,), method="Powell", bounds=bounds)
 
     print("Optimization result:", result.x)
@@ -150,6 +151,13 @@ def main():
         for name, value in zip(PARAM_NAMES, result.x):
             f.write(f"{name}: {value}\n")
     print("Log saved to", log_path)
+
+    # Training process terminal UI
+    print("\nTraining Process:")
+    for i, param in enumerate(result.x):
+        print(f"Parameter {PARAM_NAMES[i]}: {param:.6f}")
+
+    print("\nTraining completed successfully!")
 
 
 if __name__ == "__main__":

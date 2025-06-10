@@ -16,6 +16,8 @@ import time
 import os
 import multiprocessing
 from GradientDescent import optimize_rotation
+from GolfBall import GolfBall
+from ROI import run_hough_with_radius
 
 COARSE_X_INC   = 6
 COARSE_X_START = -42
@@ -38,9 +40,13 @@ def get_fine_ball_rotation(
     """
     Returns (spin_x, spin_y, spin_z) in degrees, corresponding to side-, back-, and axial-spin.
     """
+    
+    # Create GolfBall instances for each image
+    best_ball1, best_ball2 = run_hough_with_radius(full_gray_image) 
+
     # Isolate each ball into its own tight crop
-    best_ball1 = isolate_ball(ball_image1)
-    best_ball2 = isolate_ball(ball_image2)
+    best_ball1 = isolate_ball(ball_image1, ball1)
+    best_ball2 = isolate_ball(ball_image2, ball2)
 
     # Update the center coordinates of best_ball1 and best_ball2
     best_ball1.x = ball_image1.shape[1] // 2
@@ -165,6 +171,7 @@ def get_fine_ball_rotation(
     return rotation_result
 
 if __name__ == '__main__':
+    
     multiprocessing.freeze_support()
     
     import json
@@ -174,8 +181,8 @@ if __name__ == '__main__':
     test_img_path1 = input("Enter the path to the first test image: ").strip()
     test_img_path2 = input("Enter the path to the second test image: ").strip()
     if not test_img_path1 or not test_img_path2:
-        test_img_path1 = params.get("image_path1", "data/Images/log_cam2_last_strobed_img1.png")
-        test_img_path2 = params.get("image_path2", "data/Images/log_cam2_last_strobed_img2.png")
+        test_img_path1 = params.get("image_path1", "data/Images/Screenshot 2025-06-06 112413.png")
+        test_img_path2 = params.get("image_path2", "data/Images/Screenshot 2025-06-06 112341.png")
     
     delta_t = params.get("delta_t", 1/3000)
 
@@ -190,4 +197,4 @@ if __name__ == '__main__':
         print(f"Side Spin: {side_spin_rpm} rpm")
         print(f"Back Spin: {back_spin_rpm} rpm")
     else:
-        print(f"Failed to load test images from: {test_img_path1} and/or {test_img_path2}")
+        print(f"Failed to load test images from: {test_img_path1} and/or {test_img_path2}. Please check the paths and ensure the images exist.")
