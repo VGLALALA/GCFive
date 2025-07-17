@@ -238,7 +238,7 @@ if __name__ == '__main__':
     
     # Take input of path
     test_img_path = input("Enter the path to the test image: ").strip()
-    if not test_img_path:
+    if not test_img_pathf:
         test_img_path = params.get("image_path", "data/Images/log_cam2_last_strobed_img.png")
     
     delta_t = params.get("delta_t", 1/3000)  # Default to 1/3000 if not found
@@ -246,7 +246,6 @@ if __name__ == '__main__':
     test_img = cv2.imread(test_img_path, cv2.IMREAD_GRAYSCALE)
     if test_img is not None:
         best_rot_x, best_rot_y, best_rot_z = get_fine_ball_rotation(test_img,compress_candidates=True)
-
         # Calculate side spin and backspin in rpm
         side_spin_rpm = (best_rot_x / delta_t) * (60 / 360)
         back_spin_rpm = (best_rot_y / delta_t) * (60 / 360)

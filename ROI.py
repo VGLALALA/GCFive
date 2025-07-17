@@ -30,8 +30,8 @@ def run_hough_with_radius(image):
                                cv2.HOUGH_GRADIENT, 
                                dp=1.2, 
                                minDist=40,
-                               param1=100, 
-                               param2=30, 
+                               param1=50, 
+                               param2=20, 
                                minRadius=30, 
                                maxRadius=70)
 
