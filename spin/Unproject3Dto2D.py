@@ -1,5 +1,5 @@
 import numpy as np
-from GolfBall import GolfBall
+from .GolfBall import GolfBall
 
 def unproject_3d_ball_to_2d_image(src3D: np.ndarray, ball: GolfBall) -> np.ndarray:
     """

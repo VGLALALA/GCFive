@@ -32,8 +32,11 @@ GCFive contains a collection of Python utilities for detecting a golf ball in hi
 ## Repository layout
 
 ```
-Camera/                 Camera grabbing helpers and SDK wrappers
+camera/                Camera capture utilities and SDK wrappers
+image_processing/     Preprocessing helpers for ball images
+spin/                 Golf ball rotation and physics modules
 trajectory_simulation/  Physics simulation utilities translated from Godot
+notebooks/            Example Jupyter notebooks
 data/                   Sample images and spin analysis output
 lib/, sdk/              Prebuilt binaries for the HuaTeng Vision camera
 ```

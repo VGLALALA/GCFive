@@ -1,7 +1,7 @@
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from RotationSearchSpace import RotationSearchSpace
-from RotationCandidate import RotationCandidate
-from Project2dImageTo3dBall import project_2d_image_to_3d_ball
+from .RotationSearchSpace import RotationSearchSpace
+from .RotationCandidate import RotationCandidate
+from .Project2dImageTo3dBall import project_2d_image_to_3d_ball
 import numpy as np
 import time
 from functools import partial

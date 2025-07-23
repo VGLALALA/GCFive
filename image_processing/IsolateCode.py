@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from GolfBall import GolfBall
+from spin.GolfBall import GolfBall
 
 def isolate_ball(
     img: np.ndarray,

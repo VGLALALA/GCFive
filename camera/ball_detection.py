@@ -1,10 +1,10 @@
 #coding=utf-8
 import cv2
 import numpy as np
-import mvsdk
+from . import mvsdk
 import platform
 import time
-import cv_grab_callback # Import the monitoring module
+from . import cv_grab_callback # Import the monitoring module
 import queue
 import threading
 

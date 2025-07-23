@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import json
 import os
-from Convert_Canny import convert_to_canny
+from .Convert_Canny import convert_to_canny
 points = []
 def auto_determine_circle_radius(image_path):
     """

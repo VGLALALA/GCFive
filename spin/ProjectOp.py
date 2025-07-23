@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import math
 from typing import Tuple
-from GolfBall import GolfBall
+from .GolfBall import GolfBall
 
 
 class ProjectionOp:

@@ -1,7 +1,7 @@
 import numpy as np
-from GolfBall import GolfBall
-from Project2dImageTo3dBall import project_2d_image_to_3d_ball
-from Unproject3Dto2D import unproject_3d_ball_to_2d_image
+from .GolfBall import GolfBall
+from .Project2dImageTo3dBall import project_2d_image_to_3d_ball
+from .Unproject3Dto2D import unproject_3d_ball_to_2d_image
 from typing import Tuple
 
 def get_rotated_image(
@@ -41,13 +41,13 @@ def get_rotated_image(
 
 def test():
     full_gray_image = "data/Images/log_cam2_last_strobed_img.png"
-    from ROI import run_hough_with_radius
-    from IsolateCode import isolate_ball
+    from image_processing.ROI import run_hough_with_radius
+    from image_processing.IsolateCode import isolate_ball
     import cv2
     test_img = cv2.imread(full_gray_image, cv2.IMREAD_GRAYSCALE)
     best_ball1, _ = run_hough_with_radius(test_img)
     ballimg = isolate_ball(test_img,best_ball1)
-    from ImageCompressor import compress_image
+    from image_processing.ImageCompressor import compress_image
     #compress_ballimg = compress_image(ballimg,4.0)
     best_ball1.x = ballimg.shape[1] // 2
     best_ball1.y = ballimg.shape[0] // 2

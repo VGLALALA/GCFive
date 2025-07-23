@@ -1,7 +1,7 @@
 from typing import Tuple
 import numpy as np
-from GolfBall import GolfBall
-from ProjectOp import ProjectionOp
+from .GolfBall import GolfBall
+from .ProjectOp import ProjectionOp
 import math
 kPixelIgnoreValue = 128
 def project_2d_image_to_3d_ball(
