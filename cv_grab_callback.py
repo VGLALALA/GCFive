@@ -11,6 +11,12 @@ from datetime import datetime
 # Global buffer variable (allocated in main thread, used by processing thread)
 pFrameBuffer_global = 0
 
+# Add new global variables
+FRAMES_TO_CAPTURE = 30  # Number of frames to capture
+TARGET_FPS = 800  # Target FPS for camera
+recorded_frames = []
+is_recording = False
+
 def setup_camera_and_buffer():
 	global pFrameBuffer_global
 	# This function will handle camera init and buffer allocation
@@ -41,11 +47,11 @@ def setup_camera_and_buffer():
 	else:
 		mvsdk.CameraSetIspOutFormat(hCamera, mvsdk.CAMERA_MEDIA_TYPE_BGR8)
 
-	# Set camera parameters
-	mvsdk.CameraSetTriggerMode(hCamera, 0)
-	mvsdk.CameraSetFrameSpeed(hCamera, 2)
-	mvsdk.CameraSetAeState(hCamera, 0)
-	mvsdk.CameraSetExposureTime(hCamera, 1250)  # Set exposure to 5ms
+	# Set camera parameters for high-speed capture
+	mvsdk.CameraSetTriggerMode(hCamera, 0)  # Continuous mode
+	mvsdk.CameraSetFrameSpeed(hCamera, 2)   # Highest frame speed
+	mvsdk.CameraSetAeState(hCamera, 0)      # Manual exposure
+	mvsdk.CameraSetExposureTime(hCamera, 500)  # 1ms exposure for 800 FPS
 	mvsdk.CameraSetGain(hCamera, 100, 100, 100)  # Set RGB gains to 100
 	mvsdk.CameraSetAntiFlick(hCamera, 0)
 
@@ -83,48 +89,38 @@ def acquire_frames(hCamera, frame_queue, stop_event):
 # Thread function for processing frames
 def process_frames(hCamera, monoCamera, detected_circle, original_cropped_roi, frame_queue, stop_event):
 	print("Processing thread started.")
+	global recorded_frames, is_recording
 
 	x, y, r = detected_circle
 	
 	# Calculate crop coordinates using original ROI dimensions
 	h_roi, w_roi = original_cropped_roi.shape[:2]
-	half_crop = 100 // 2 # Use the fixed crop size as in ball_detection
+	half_crop = 100 // 2
 	x1 = max(0, x - half_crop)
 	y1 = max(0, y - half_crop)
-	x2 = min(x1 + w_roi, 640)  # Ensure crop stays within original ROI dimensions and frame bounds
-	y2 = min(y1 + h_roi, 480)  # Ensure crop stays within original ROI dimensions and frame bounds
+	x2 = min(x1 + w_roi, 640)
+	y2 = min(y1 + h_roi, 480)
 
 	movement_threshold = 12
 
 	print("Monitoring movement in the detected area.")
 
-	# Display the original cropped ROI
-	# cv2.imshow("Original Cropped ROI", original_cropped_roi)
-
-	# Initialize variables for FPS calculation
 	frame_count = 0
 	start_time = time.time()
 
 	while not stop_event.is_set() or not frame_queue.empty():
 		try:
-			# Get frame data from the queue with a timeout
-			# Use a small timeout so the thread can check the stop_event
 			frame_data_tuple = frame_queue.get(timeout=0.1)
-			if frame_data_tuple is None: # Check for sentinel value
+			if frame_data_tuple is None:
 				break
 			
 			pRawData, FrameHead = frame_data_tuple
-
-			# Process the raw data into the global frame buffer
 			mvsdk.CameraImageProcess(hCamera, pRawData, pFrameBuffer_global, FrameHead)
-
-			# Release the raw data buffer back to the SDK (do this after processing)
 			mvsdk.CameraReleaseImageBuffer(hCamera, pRawData)
 
 			if platform.system() == "Windows":
 				mvsdk.CameraFlipFrameBuffer(pFrameBuffer_global, FrameHead, 1)
 
-			# Convert the global frame buffer to OpenCV format and grayscale if needed
 			frame = np.frombuffer((mvsdk.c_ubyte * FrameHead.uBytes).from_address(pFrameBuffer_global), dtype=np.uint8)
 			frame = frame.reshape((FrameHead.iHeight, FrameHead.iWidth, 1 if FrameHead.uiMediaType == mvsdk.CAMERA_MEDIA_TYPE_MONO8 else 3))
 			
@@ -133,10 +129,6 @@ def process_frames(hCamera, monoCamera, detected_circle, original_cropped_roi, f
 			else:
 				gray_current = frame
 
-			# Ensure crop coordinates are within frame bounds and apply crop
-			# Recalculate crop coordinates based on the current frame's center
-			# Note: Assuming ball center doesn't move significantly from initial detection crop region
-			# If ball moves out of the initial crop region, this logic would need adjustment
 			x1_curr = max(0, min(x - half_crop, frame.shape[1] - 1))
 			y1_curr = max(0, min(y - half_crop, frame.shape[0] - 1))
 			x2_curr = max(x1_curr + 1, min(x + half_crop, frame.shape[1]))
@@ -144,67 +136,139 @@ def process_frames(hCamera, monoCamera, detected_circle, original_cropped_roi, f
 
 			current_cropped = gray_current[y1_curr:y2_curr, x1_curr:x2_curr]
 
-			# Resize current_cropped to match original_cropped_roi size if necessary
 			if current_cropped.shape[:2] != original_cropped_roi.shape[:2] and current_cropped.size > 0:
 				current_cropped_resized = cv2.resize(current_cropped, (w_roi, h_roi))
 			else:
-				current_cropped_resized = current_cropped # Use as is if matching or empty
+				current_cropped_resized = current_cropped
 
-			# Verify we have valid ROIs before processing
 			if original_cropped_roi.size > 0 and current_cropped_resized.size > 0:
-				# Compare the raw cropped images
 				difference = cv2.absdiff(original_cropped_roi, current_cropped_resized)
 				mean_difference = np.mean(difference)
 
-				# Display the current cropped ROI just before comparison
-				# cv2.imshow("Current Cropped ROI", current_cropped_resized)
-				
-				# Display the original cropped ROI again in the loop to keep it visible
-				# cv2.imshow("Original Cropped ROI", original_cropped_roi)
-
-				# Print the mean difference and FPS
 				frame_count += 1
 				current_time = time.time()
 				elapsed_time = current_time - start_time
 				fps = frame_count / elapsed_time if elapsed_time > 0 else 0
 				print(f"Comparison FPS: {fps:.1f}, Mean Difference: {mean_difference:.2f}")
 
+				if mean_difference > movement_threshold and not is_recording:
+					print("BALL MOVED - Starting frame recording")
+					is_recording = True
+					recorded_frames = []
+					cv2.circle(current_cropped_resized, (x - x1_curr, y - y1_curr), r, (0, 0, 255), 2)
 
-				# Check for significant change
-				if mean_difference > movement_threshold:
-					print("BALL MOVED")
-					cv2.circle(current_cropped_resized, (x - x1_curr, y - y1_curr), r, (0, 0, 255), 2)  # Red circle if moved
+				# Record frames if we're in recording mode
+				if is_recording:
+					recorded_frames.append(gray_current.copy())
+					print(f"Captured frame {len(recorded_frames)} of {FRAMES_TO_CAPTURE}")
+					
+					if len(recorded_frames) >= FRAMES_TO_CAPTURE:
+						is_recording = False
+						print(f"Recording complete. Captured {len(recorded_frames)} frames")
+						
+						# Stop the acquisition thread before processing frames
+						stop_event.set()
+						
+						# Process frames one at a time
+						for i in range(len(recorded_frames) - 1, -1, -1):
+							frame = recorded_frames[i]
+							print(f"\nProcessing frame {i}")
+							
+							# Create a copy of the frame for display
+							display_frame = frame.copy()
+							
+							# Run Hough circles on the frame
+							circles = cv2.HoughCircles(
+								frame,
+								cv2.HOUGH_GRADIENT,
+								dp=1,
+								minDist=50,
+								param1=50,
+								param2=30,
+								minRadius=20,
+								maxRadius=100
+							)
+							
+							if circles is not None:
+								print(f"Found circle in frame {i}")
+								# Draw the detected circle
+								for circle in circles[0]:
+									x, y, r = map(int, circle)
+									cv2.circle(display_frame, (x, y), r, (0, 255, 0), 2)
+									cv2.circle(display_frame, (x, y), 2, (0, 0, 255), 3)
+							
+							# Display both original and processed frames
+							cv2.imshow(f"Original Frame {i}", frame)
+							if circles is not None:
+								cv2.imshow(f"Frame {i} with circle", display_frame)
+							
+							print("Press any key to process next frame, or 'q' to quit")
+							key = cv2.waitKey(0)
+							if key == ord('q'):
+								break
+							
+							# Close the current frame windows before showing the next ones
+							cv2.destroyWindow(f"Original Frame {i}")
+							if circles is not None:
+								cv2.destroyWindow(f"Frame {i} with circle")
+						# INSERT_YOUR_CODE
+						# Find, for each frame, the detected circle whose x is closest to 50, and display that frame and the original
+						closest_idx = None
+						closest_diff = None
+						closest_circle = None
 
-					# --- Stop and Display Last Comparison ---
-					print("Ball movement detected. Stopping monitoring.")
+						for i, frame in enumerate(recorded_frames):
+							# Run Hough circles on the frame
+							circles = cv2.HoughCircles(
+								frame,
+								cv2.HOUGH_GRADIENT,
+								dp=1,
+								minDist=50,
+								param1=50,
+								param2=30,
+								minRadius=20,
+								maxRadius=100
+							)
+							if circles is not None:
+								for circle in circles[0]:
+									x, y, r = map(int, circle)
+									diff = abs(x - 100)
+									if closest_diff is None or diff < closest_diff:
+										closest_diff = diff
+										closest_idx = i
+										closest_circle = (x, y, r)
 
-					# Ensure the last frame is displayed
-					cv2.imshow("Original Cropped ROI", original_cropped_roi)
-					cv2.imshow("Current Cropped ROI", current_cropped_resized)
-
-					print("Displaying last compared images. Press any key to exit.")
-					cv2.waitKey(0) # Wait indefinitely for a key press
-
-					# Set stop event to signal acquisition thread
-					stop_event.set()
-					break # Exit the processing loop
+						if closest_idx is not None and closest_circle is not None:
+							# Display the original frame
+							cv2.imshow(f"Original Frame (closest x to 50) idx={closest_idx}", recorded_frames[closest_idx])
+							# Draw the detected circle on a copy
+							disp = recorded_frames[closest_idx].copy()
+							x, y, r = closest_circle
+							cv2.circle(disp, (x, y), r, (0, 255, 0), 2)
+							cv2.circle(disp, (x, y), 2, (0, 0, 255), 3)
+							cv2.imshow(f"Frame with circle x closest to 50 (x={x})", disp)
+							print(f"Displayed frame {closest_idx} with circle x={x} closest to 50")
+							cv2.waitKey(0)
+							cv2.destroyWindow(f"Original Frame (closest x to 50) idx={closest_idx}")
+							cv2.destroyWindow(f"Frame with circle x closest to 50 (x={x})")
+						else:
+							print("No circles detected in any frame for x closest to 50.")
+						print("Frame processing complete")
+						cv2.destroyAllWindows()
+						return
 
 			else:
-				# Print a warning if ROI is invalid
 				print("Warning: Invalid ROI detected during monitoring.")
 
 		except queue.Empty:
-			# If queue is empty and stop_event is not set, just continue waiting
-			pass # Use pass to keep correct indentation
+			pass
 		except Exception as e:
 			print(f"Processing thread error: {e}")
 			stop_event.set()
 			break
 
 	print("Processing thread stopped.")
-	# Close windows when processing stops
 	cv2.destroyAllWindows()
-	
 
 # Note: main() and standalone execution block are removed
 # This file is now intended to be imported and its functions called by ball_detection.py

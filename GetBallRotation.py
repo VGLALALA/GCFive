@@ -178,18 +178,21 @@ if __name__ == '__main__':
     with open('HyperParameter.json', 'r') as file:
         params = json.load(file)
     
+
     test_img_path1 = input("Enter the path to the first test image: ").strip()
     test_img_path2 = input("Enter the path to the second test image: ").strip()
     if not test_img_path1 or not test_img_path2:
         test_img_path1 = params.get("image_path1", "data/Images/Screenshot 2025-06-06 112413.png")
         test_img_path2 = params.get("image_path2", "data/Images/Screenshot 2025-06-06 112341.png")
-    
+
     delta_t = params.get("delta_t", 1/3000)
 
     test_img1 = cv2.imread(test_img_path1, cv2.IMREAD_GRAYSCALE)
     test_img2 = cv2.imread(test_img_path2, cv2.IMREAD_GRAYSCALE)
     if test_img1 is not None and test_img2 is not None:
         best_rot_x, best_rot_y, best_rot_z = get_fine_ball_rotation(test_img1, test_img2, compress_candidates=True)
+
+
 
         side_spin_rpm = (best_rot_x / delta_t) * (60 / 360)
         back_spin_rpm = (best_rot_y / delta_t) * (60 / 360)
