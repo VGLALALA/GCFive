@@ -1,33 +1,27 @@
 import cv2
 import numpy as np
 from spin.GolfBall import GolfBall
-# Import the circle detection helpers
-from .ballDetection import run_hough_with_radius, auto_determine_circle_radius
-from .Convert_Canny import convert_to_canny
+from .ballDetection import detect_golfballs
+
 def format_image_to_golfball(image_path: str) -> GolfBall:
     """
-    Formats an image to a GolfBall class instance by detecting the golf ball outline
-    and determining its radius using the Hough Circle Transform.
+    Detect a golf ball in ``image_path`` using the YOLO model and return it as a
+    :class:`GolfBall` instance.
 
     Args:
         image_path: Path to the image file.
 
     Returns:
-        A GolfBall instance with detected x, y coordinates and measured radius.
+        A ``GolfBall`` with detected center coordinates and radius in pixels.
     """
-    # Read the image
-    img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
-    
 
-    # Automatically determine the radius of the circle
-    radius = auto_determine_circle_radius(image_path)
-    canny = convert_to_canny(image_path)
-    # Run Hough Circle Transform to detect circles
-    circles = run_hough_with_radius(canny, radius)
-    
-    # Assuming the first detected circle is the golf ball
-    if circles is not None and len(circles) > 0:
+    # Load the image in BGR so the detector can run on colour data
+    img = cv2.imread(image_path)
+
+    circles = detect_golfballs(img, display=False)
+
+    if circles:
         x, y, r = circles[0]
-        return GolfBall(x=x, y=y, measured_radius_pixels=r, angles_camera_ortho_perspective=(0.0, 0.0, 0.0))
-    else:
-        raise ValueError("No golf ball detected in the image.")
+        return GolfBall(x=x, y=y, measured_radius_pixels=r,
+                        angles_camera_ortho_perspective=(0.0, 0.0, 0.0))
+    raise ValueError("No golf ball detected in the image.")
