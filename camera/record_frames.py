@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-import mvsdk
+from . import mvsdk
 import platform
 import time
 import threading

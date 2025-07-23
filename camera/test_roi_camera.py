@@ -1,7 +1,7 @@
 # test_roi_camera.py
 import time, platform
 import numpy as np
-import mvsdk
+from . import mvsdk
 
 ROI_W, ROI_H = 640, 300
 ROI_X, ROI_Y = 0, 0

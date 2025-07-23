@@ -1,11 +1,11 @@
 import time
 import math
 from typing import List, Tuple
-from RotationCandidate import RotationCandidate
+from .RotationCandidate import RotationCandidate
 import time
 import numpy as np
 from typing import List, Tuple
-from CompareRotationImage import compare_rotation_image
+from .CompareRotationImage import compare_rotation_image
 
 def compare_candidate_angle_images(
     target_image: np.ndarray,

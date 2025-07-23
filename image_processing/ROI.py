@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import os
 import json
-from GolfBall import GolfBall
+from spin.GolfBall import GolfBall
 
 def calculate_overlap_score(circle, other_circles):
     x, y, r = circle

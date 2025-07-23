@@ -1,8 +1,8 @@
 import cv2
 import numpy as np
 from typing import Tuple
-from GolfBall import GolfBall
-from FormatImage import format_image_to_golfball
+from spin.GolfBall import GolfBall
+from .FormatImage import format_image_to_golfball
 
 def match_ball_image_sizes(img1, img2, ball1=None, ball2=None):
     """

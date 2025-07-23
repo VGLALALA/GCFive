@@ -233,7 +233,7 @@ def calculate_golf_ball_trajectory_advanced(image1, image2, fps):
 # Example usage:
 if __name__ == "__main__":
     # Example with getFPS.py
-    import getFPS  # Assuming getFPS.py provides a function to get FPS
+    from camera import get_fps as getFPS  # Assuming getFPS.py provides a function to get FPS
     
     # Get frame rate
     fps = 790  # Or however getFPS.py provides the frame rate

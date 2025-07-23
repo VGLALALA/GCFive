@@ -1,9 +1,9 @@
 import numpy as np
 from typing import Tuple
-from CompareRotationImage import compare_rotation_image
-from Project2dImageTo3dBall import project_2d_image_to_3d_ball
-from GolfBall import GolfBall
-from RotationSearchSpace import RotationSearchSpace
+from .CompareRotationImage import compare_rotation_image
+from .Project2dImageTo3dBall import project_2d_image_to_3d_ball
+from .GolfBall import GolfBall
+from .RotationSearchSpace import RotationSearchSpace
 from scipy.optimize import minimize
 
 

@@ -1,23 +1,23 @@
 import cv2
 from typing import Tuple
 import numpy as np
-from IsolateCode import isolate_ball
-from RemoveReflection import remove_reflections
-from MaskAreaOutsideBall import mask_area_outside_ball
-from GetRotatedImage import get_rotated_image
-from GenerateRotationCandidate import generate_rotation_candidates
-from CompareRotationImage import compare_rotation_image
-from matchBallSize import match_ball_image_sizes
-from RotationSearchSpace import RotationSearchSpace
-from CompareCandidateAngleImage import compare_candidate_angle_images
-from ApplyGaborFilter import apply_gabor_filter_image
-from ImageCompressor import compress_image
+from image_processing.IsolateCode import isolate_ball
+from image_processing.RemoveReflection import remove_reflections
+from image_processing.MaskAreaOutsideBall import mask_area_outside_ball
+from .GetRotatedImage import get_rotated_image
+from .GenerateRotationCandidate import generate_rotation_candidates
+from .CompareRotationImage import compare_rotation_image
+from image_processing.matchBallSize import match_ball_image_sizes
+from .RotationSearchSpace import RotationSearchSpace
+from .CompareCandidateAngleImage import compare_candidate_angle_images
+from image_processing.ApplyGaborFilter import apply_gabor_filter_image
+from image_processing.ImageCompressor import compress_image
 import time
 import os
 import multiprocessing
-from GradientDescent import optimize_rotation
-from GolfBall import GolfBall
-from ROI import run_hough_with_radius
+from .GradientDescent import optimize_rotation
+from .GolfBall import GolfBall
+from image_processing.ROI import run_hough_with_radius
 
 COARSE_X_INC   = 6
 COARSE_X_START = -42

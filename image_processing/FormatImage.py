@@ -1,9 +1,9 @@
 import cv2
 import numpy as np
-from GolfBall import GolfBall
+from spin.GolfBall import GolfBall
 # Import the circle detection helpers
-from ballDetection import run_hough_with_radius, auto_determine_circle_radius
-from Convert_Canny import convert_to_canny
+from .ballDetection import run_hough_with_radius, auto_determine_circle_radius
+from .Convert_Canny import convert_to_canny
 def format_image_to_golfball(image_path: str) -> GolfBall:
     """
     Formats an image to a GolfBall class instance by detecting the golf ball outline
