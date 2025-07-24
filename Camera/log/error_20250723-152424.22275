@@ -1,0 +1,4 @@
+Log file created at: 2025/07/23 15:24:24
+Running on machine: MakkapakkaDuo
+Log line format: [IWEF]mmdd hh:mm:ss.uuuuuu threadid file:line] msg
+E0723 15:24:24.978330 22275 MVCAMAPI.cpp:369] CameraInit Failed, err:-18,Version:2.1.0.49,FriendlyName:BoomBamCam,SN:045041223114

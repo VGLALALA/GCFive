@@ -52,8 +52,3 @@ def detect_golfballs(image, conf=0.25, imgsz=640, display=True):
         cv2.destroyAllWindows()
 
     return circle_data
-
-img = cv2.imread("data/Images/frame_00025.jpg")
-
-
-print(detect_golfballs(img))

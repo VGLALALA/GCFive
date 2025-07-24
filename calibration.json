@@ -1,0 +1,25 @@
+{
+  "focal_length_px": 1218.5235528474338,
+  "samples": [
+    {
+      "radius_px": 56,
+      "distance_mm": 421.0
+    },
+    {
+      "radius_px": 35,
+      "distance_mm": 810.0
+    },
+    {
+      "radius_px": 58,
+      "distance_mm": 450.0
+    },
+    {
+      "radius_px": 50,
+      "distance_mm": 520.0
+    },
+    {
+      "radius_px": 44,
+      "distance_mm": 590.0
+    }
+  ]
+}
