@@ -1,8 +1,7 @@
+
 import cv2
 from typing import Tuple
-from .SimilarityCalculation import delta_similarity
 
-FRAME_SIMILARITY_DELTA = 0.0015
 
 
 def has_ball_moved(prev_frame: cv2.Mat, curr_frame: cv2.Mat, bbox: Tuple[int, int, int, int]) -> Tuple[bool, float]:
@@ -18,3 +17,4 @@ def has_ball_moved(prev_frame: cv2.Mat, curr_frame: cv2.Mat, bbox: Tuple[int, in
         return False, 0.0
     _, delta, _ = delta_similarity(roi_prev, roi_curr)
     return delta > FRAME_SIMILARITY_DELTA, delta
+
