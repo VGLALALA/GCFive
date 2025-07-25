@@ -62,17 +62,30 @@ def get_fine_ball_rotation(
     
     # Resize so both crops are the same size
     ball1img, ball2img = match_ball_image_sizes(ball1img, ball2img)
-
+    cv2.imshow("Gaber Ref Removed 1", ball1img)
+    cv2.imshow("Gaber Ref Removed 2", ball2img)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
     # Apply Gabor filters to pick out dimple edges
-    #ball1img = cv2.equalizeHist(ball1img)c
-    #ball2img = cv2.equalizeHist(ball2img)
+    ball1img = cv2.equalizeHist(ball1img)
+    ball2img = cv2.equalizeHist(ball2img)
+    cv2.imshow("Gaber Ref Removed 1", ball1img)
+    cv2.imshow("Gaber Ref Removed 2", ball2img)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
     edge1, calibrated_binary_threshold = apply_gabor_filter_image(ball1img)
     edge2, calibrated_binary_threshold = apply_gabor_filter_image(ball2img, calibrated_binary_threshold)
-    
+    cv2.imshow("Gaber Ref Removed 1", edge1)
+    cv2.imshow("Gaber Ref Removed 2", edge2)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
     # Remove specular reflections
     gaberRefRemoved1 = remove_reflections(ball1img, edge1)
     gaberRefRemoved2 = remove_reflections(ball2img, edge2)
-    
+    cv2.imshow("Gaber Ref Removed 1", gaberRefRemoved1)
+    cv2.imshow("Gaber Ref Removed 2", gaberRefRemoved2)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
     # Mask out everything outside the ball's circle
     print(ball1,ball2)
     FINAL_MASK_FACTOR = 0.92

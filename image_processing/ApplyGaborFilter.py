@@ -61,8 +61,7 @@ def apply_test_gabor_filter(img_f32: np.ndarray,
     return dimple_edges, white_percent
 
 
-def apply_gabor_filter_image(image_gray: np.ndarray,
-                               prior_binary_threshold: float = -1.0) -> (np.ndarray, float):
+def apply_gabor_filter_image(image_gray: np.ndarray, prior_binary_threshold: float = -1.0) -> (np.ndarray, float):
     """
     Mimics ApplyGaborFilterToBall. Returns (edge_image, calibrated_threshold).
     """
@@ -79,7 +78,7 @@ def apply_gabor_filter_image(image_gray: np.ndarray,
     pos_gamma  = 4
     pos_th     = 60
     pos_psi    = 27
-    binary_threshold = 3
+    binary_threshold = 10
 
     if prior_binary_threshold > 0:
         binary_threshold = prior_binary_threshold
