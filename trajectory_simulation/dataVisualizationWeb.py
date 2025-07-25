@@ -1,105 +1,73 @@
-from __future__ import annotations
-
-import io
-from typing import Dict, Optional
-
+import gradio as gr
 import numpy as np
-import matplotlib
-matplotlib.use("Agg")  # headless backend
 import matplotlib.pyplot as plt
-from fastapi import FastAPI
-from fastapi.responses import HTMLResponse, Response
+import plotly.graph_objs as go
 
-from .range import RangeSim
+def visualize_golf_ball(positions, speed_mps, launch_angle,
+                        backspin_rpm, side_spin_rpm, spin_axis,
+                        carry, total, apex, time_of_flight,
+                        descending_angle):
+    positions = np.array(positions)
+    x, y, z = positions[:,0], positions[:,1], positions[:,2]
 
-app = FastAPI(title="Golf Shot Visualizer")
+    # 2D Plot: Down the Line View
+    fig1, ax1 = plt.subplots()
+    ax1.plot(x, y, marker='o')
+    ax1.set_xlabel("Downrange Distance (m)")
+    ax1.set_ylabel("Height (m)")
+    ax1.set_title("Down the Line View")
+    fig1.tight_layout()
 
-_last_image: Optional[bytes] = None
-_last_data: Optional[Dict[str, float]] = None
+    # 2D Plot: Side View
+    fig2, ax2 = plt.subplots()
+    ax2.plot(z, y, marker='o', linestyle='--')
+    ax2.set_xlabel("Lateral Dispersion (m)")
+    ax2.set_ylabel("Height (m)")
+    ax2.set_title("Side View")
+    fig2.tight_layout()
 
+    # Interactive 3D Plot
+    fig3 = go.Figure(
+        data=[go.Scatter3d(x=x, y=z, z=y, mode='lines+markers', marker=dict(size=3))],
+        layout=go.Layout(
+            title="3D Trajectory",
+            scene=dict(
+                xaxis=dict(title='Downrange (m)'),
+                yaxis=dict(title='Lateral (m)'),
+                zaxis=dict(title='Height (m)')
+            )
+        )
+    )
 
-def _simulate_shot(ball_data: Dict[str, float]):
-    sim = RangeSim()
-    sim.ball.hit_from_data(ball_data)
-    sim.track_points = True
-    sim.trail.add_point(sim.ball.position.copy())
+    return fig1, fig2, fig3
 
-    for _ in range(4000):
-        sim.step(1 / 240.0)
-        if np.linalg.norm(sim.ball.velocity) < 0.1 and sim.ball.position[1] <= 0:
-            break
-
-    positions = np.array(sim.ball.total_position_list)
-    carry_yards = None
-    if sim.ball.position_list:
-        p = sim.ball.position_list[0]
-        carry_yards = float((p[[0, 2]] ** 2).sum() ** 0.5 * 1.09361)
-    total_yards = sim.distance_yards
-    return positions, carry_yards, total_yards
-
-
-def _plot_trajectory(positions: np.ndarray) -> bytes:
-    fig = plt.figure(figsize=(8, 6))
-    ax = fig.add_subplot(111, projection="3d")
-    ax.plot(positions[:, 0] * 1.09361, positions[:, 2] * 1.09361, positions[:, 1] * 3.28084)
-    ax.set_xlabel("Forward (yd)")
-    ax.set_ylabel("Lateral (yd)")
-    ax.set_zlabel("Height (ft)")
-    buf = io.BytesIO()
-    fig.tight_layout()
-    fig.savefig(buf, format="png")
-    plt.close(fig)
-    buf.seek(0)
-    return buf.getvalue()
-
-
-@app.post("/shot")
-async def shot(shot: Dict):
-    global _last_image, _last_data
-    ball_data = shot.get("BallData") or shot
-    positions, carry, total = _simulate_shot(ball_data)
-    _last_image = _plot_trajectory(positions)
-    _last_data = {
-        "speed": ball_data.get("Speed", 0.0),
-        "launch_angle": ball_data.get("VLA", 0.0),
-        "backspin": ball_data.get("TotalSpin", 0.0),
-        "carry": carry,
-        "total": total,
-    }
-    return {"status": "ok"}
-
-
-@app.get("/", response_class=HTMLResponse)
-async def index():
-    if not _last_data:
-        return "<h2>No shot data received.</h2>"
-    img_tag = '<img src="/latest.png" alt="trajectory">'
-    html = f"""
-    <html>
-      <body>
-        <h2>Shot Data</h2>
-        <ul>
-          <li>Ball Speed: {_last_data['speed']:.1f} mph</li>
-          <li>Launch Angle: {_last_data['launch_angle']:.1f}°</li>
-          <li>Backspin: {_last_data['backspin']:.1f} rpm</li>
-          <li>Carry: {_last_data['carry']:.1f} yd</li>
-          <li>Total Distance: {_last_data['total']:.1f} yd</li>
-        </ul>
-        {img_tag}
-      </body>
-    </html>
-    """
-    return HTMLResponse(content=html)
-
-
-@app.get("/latest.png")
-async def latest_png():
-    if _last_image is None:
-        return Response(status_code=404)
-    return Response(content=_last_image, media_type="image/png")
-
+# Define Gradio interface
+interface = gr.Interface(
+    fn=visualize_golf_ball,
+    inputs=[
+        gr.Dataframe(
+            headers=["X (m)", "Y (m)", "Z (m)"],
+            label="Positions (3D array of shape [n, 3])"
+        ),
+        gr.Number(label="Speed (m/s)"),
+        gr.Number(label="Launch Angle (°)"),
+        gr.Number(label="Backspin (RPM)"),
+        gr.Number(label="Side Spin (RPM)"),
+        gr.Number(label="Spin Axis (°)"),
+        gr.Number(label="Carry Distance (m)"),
+        gr.Number(label="Total Distance (m)"),
+        gr.Number(label="Apex Height (m)"),
+        gr.Number(label="Time of Flight (s)"),
+        gr.Number(label="Descending Angle (°)")
+    ],
+    outputs=[
+        gr.Plot(label="Down the Line View"),
+        gr.Plot(label="Side View"),
+        gr.Plot(label="Interactive 3D Trajectory")
+    ],
+    title="Golf Ball Trajectory Visualizer",
+    description="Enter your ball‑flight data to generate 2D and interactive 3D plots."
+)
 
 if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    interface.launch(server_name="0.0.0.0", server_port=7860)

@@ -27,7 +27,7 @@ GOLF_BALL_RADIUS_MM   = GOLF_BALL_DIAMETER_MM / 2.0  # 21.335 mm
 # -------- Camera (mvsdk) config --------
 ROI_W, ROI_H = 640, 300
 ROI_X, ROI_Y = 0, 100
-EXPOSURE_US  = 60  # 0.5 ms
+EXPOSURE_US  = 50  # 0.5 ms
 
 # Import mvsdk (try relative then absolute)
 try:
