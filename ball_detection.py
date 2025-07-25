@@ -59,8 +59,8 @@ def main_loop():
                 minDist=50,
                 param1=50,
                 param2=30,
-                minRadius=50,
-                maxRadius=80
+                minRadius=15,
+                maxRadius=60
             )
 
             if circles is not None:
