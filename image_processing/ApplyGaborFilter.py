@@ -79,7 +79,7 @@ def apply_gabor_filter_image(image_gray: np.ndarray,
     pos_gamma  = 4
     pos_th     = 60
     pos_psi    = 27
-    binary_threshold = 8.5
+    binary_threshold = 3
 
     if prior_binary_threshold > 0:
         binary_threshold = prior_binary_threshold

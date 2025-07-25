@@ -1,47 +1,39 @@
 import cv2
 import numpy as np
+from typing import Union
+from spin.GolfBall import GolfBall
 
 def mask_area_outside_ball(ball_image: np.ndarray,
-                           ball,
+                           ball: GolfBall,
                            mask_reduction_factor: float,
-                           mask_value: int = 128) -> np.ndarray:
+                           mask_value: Union[int, tuple] = 128) -> np.ndarray:
     """
-    Masks everything outside a reduced-radius circle around the ball,
+    Masks everything outside a reduced‐radius circle around the ball,
     painting the outside region with mask_value.
-    
-    :param ball_image:     Input image (e.g. edge-detected dimples), H×W×C
-    :param ball:           GolfBall-like object with .measured_radius_pixels, .x, .y
+
+    :param ball_image:            Input image (H×W or H×W×C)
+    :param ball:                  GolfBall with .measured_radius_pixels, .x, .y
     :param mask_reduction_factor: Fraction to shrink the mask circle (e.g. 0.92)
-    :param mask_value:     Intensity value to paint outside (e.g. 128)
-    :returns:              New image with outside masked
+    :param mask_value:            Int or tuple (length = channels) to paint outside
+    :returns:                     New image with outside masked
     """
-    # 1) compute reduced mask radius
-    mask_radius = int(ball.measured_radius_pixels * mask_reduction_factor)
+    # Copy the input so we don't overwrite it
+    out = ball_image.copy()
 
-    # 2) first mask: white circle on black
-    mask = np.zeros_like(ball_image)
-    cv2.circle(mask,
-               center=(int(ball.x), int(ball.y)),
-               radius=mask_radius,
-               color=255,
-               thickness=-1)
+    # Compute reduced radius and center from the GolfBall
+    reduced_radius = int(ball.measured_radius_pixels * mask_reduction_factor)
+    center = (int(ball.x), int(ball.y))
 
-    # 3) keep only inside-circle pixels
-    result = cv2.bitwise_and(ball_image, mask)
+    # Build a single‐channel mask
+    h, w = ball_image.shape[:2]
+    mask = np.zeros((h, w), dtype=np.uint8)
+    cv2.circle(mask, center, reduced_radius, color=255, thickness=-1)
 
-    # 4) build inverted mask: rectangle of mask_value with black circle punched out
-    cv2.rectangle(mask,
-                  pt1=(0, 0),
-                  pt2=(ball_image.shape[1], ball_image.shape[0]),
-                  color=mask_value,
-                  thickness=cv2.FILLED)
-    cv2.circle(mask,
-               center=(int(ball.x), int(ball.y)),
-               radius=mask_radius,
-               color=0,
-               thickness=-1)
+    # If color image, broaden mask dims to broadcast across channels
+    if out.ndim == 3:
+        mask = mask[:, :, None]
 
-    # 5) XOR in the outside region => paints everything outside the circle
-    result = cv2.bitwise_xor(result, mask)
+    # Wherever mask==0, paint with mask_value
+    out[mask == 0] = mask_value
 
-    return result
+    return out
