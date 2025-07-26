@@ -49,9 +49,12 @@ def generate_rotation_candidates(base_dimple_image: np.ndarray,
     # Build flat list of tasks: each is (idx, x_idx, y_idx, z_idx, x_deg, y_deg, z_deg)
     tasks = []
     idx = 0
-    for x_idx, x_deg in enumerate(range(xs, xe + 1, xi)):
-        for y_idx, y_deg in enumerate(range(ys, ye + 1, yi)):
-            for z_idx, z_deg in enumerate(range(zs, ze + 1, zi)):
+    for x_idx in range(xSize):
+        x_deg = xs + x_idx * xi
+        for y_idx in range(ySize):
+            y_deg = ys + y_idx * yi
+            for z_idx in range(zSize):
+                z_deg = zs + z_idx * zi
                 tasks.append((idx, x_idx, y_idx, z_idx, x_deg, y_deg, z_deg))
                 idx += 1
 

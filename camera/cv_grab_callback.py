@@ -8,7 +8,7 @@ import traceback
 from image_processing.ballDetectionyolo import detect_golfballs  # Import YOLO detection function
 BALL_DIAM_MM = 42.67
 GOLF_BALL_RADIUS_MM = 21.335
-THRESHOLD_APART_MM = 80.0  # Minimum distance in mm for capture pairing
+THRESHOLD_APART_MM = 50.0  # Minimum distance in mm for capture pairing
 DESIRED_EXPOSURE_US = 50.0
 DESIRED_ANALOG_GAIN = 1000.0
 DESIRED_GAMMA = 0.25
@@ -19,8 +19,8 @@ SETUP_DET_INTERVAL = 0.5  # Interval for detection in setup mode
 WAIT_TO_CAPTURE = 1.5  # Time to hold still before entering hitting mode
 MOVEMENT_THRESHOLD_MM = 2.0
 # Add new global variables
-FRAMES_TO_CAPTURE = 30  # Number of frames to capture
-TARGET_FPS = 2000  # Target FPS for camera
+FRAMES_TO_CAPTURE = 10  # Number of frames to capture
+TARGET_FPS = 1300  # Target FPS for camera
 recorded_frames = []
 is_recording = False
 INITIAL_IDX, BEST_IDX = None, None

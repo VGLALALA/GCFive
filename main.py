@@ -37,6 +37,7 @@ def main():
     ball_detected = False
     detected_circle = None
     original_cropped_roi = None
+    stationary_start_time = None
 
     # --- Detection Loop ---
     # Capture frames until ball detected or 'q' pressed
@@ -63,9 +64,14 @@ def main():
                 # Check if the detected ball is within the predefined zone
                 if is_point_in_zone(ballx, ballz):
                     print("Ball is within the zone.")
-                    ball_detected = True
+                    if stationary_start_time is None:
+                        stationary_start_time = time.time()
+                    elif time.time() - stationary_start_time >= 3:
+                        ball_detected = True
+                        print("Ball has been stationary for over 3 seconds.")
                 else:
                     print("Ball is outside the zone.")
+                    stationary_start_time = None
                     continue
                 
                 # Calculate crop coordinates
@@ -90,12 +96,13 @@ def main():
                 cv2.imshow("Ball Detection - Press q to exit", frame_bgr)
                 cv2.imshow("Detected Ball (Cropped)", original_cropped_roi)
 
-                print("Ball detected! Press any key in a display window to start monitoring.")
-                cv2.waitKey(0) # Wait indefinitely for a key press
-                cv2.destroyAllWindows() # Close detection windows
+                if ball_detected:
+                    print("Ball detected and stationary! Press any key in a display window to start monitoring.")
+                    cv2.waitKey(0) # Wait indefinitely for a key press
+                    cv2.destroyAllWindows() # Close detection windows
 
-                # Break the detection loop
-                break
+                    # Break the detection loop
+                    break
 
         except Exception as e:
             print(f"Camera grab failed: {e}")
@@ -139,8 +146,8 @@ def main():
     print("Camera and buffer released.")
 
     best_rot_x, best_rot_y, best_rot_z = get_fine_ball_rotation(initial_frame, best_match_frame)
-    side_spin_rpm = math.abs((best_rot_x / (DELTA_T * delta_idx)) * (60 / 360))
-    back_spin_rpm = math.abs((best_rot_y / (DELTA_T * delta_idx)) * (60 / 360))
+    side_spin_rpm = (best_rot_x / (DELTA_T * delta_idx)) * (60 / 360)
+    back_spin_rpm = (best_rot_y / (DELTA_T * delta_idx)) * (60 / 360)
     spin_axis = calculate_spin_axis(back_spin_rpm, side_spin_rpm)
     launch_angle = calculate_launch_angle(initial_frame, best_match_frame)
     ball_speed_mph = calculate_ball_speed(initial_frame, best_match_frame, DELTA_T * delta_idx, return_mph=True)
@@ -157,7 +164,7 @@ def main():
     apex = trajectory_data["apex"]
     hangtime = trajectory_data["time_of_flight"]
     desc_angle = trajectory_data["descending_angle"]
-    print(f"Delta t: {(DELTA_T * delta_idx * 1000):.2f} ms")
+    print(f"Delta t: {(DELTA_T * delta_idx * 1000):.2f}")
     print(f"Ball Speed: {ball_speed_mph:.2f} mph")
     print(f"Vertical Launch Angle: {launch_angle:.2f} degrees")
     print(f"Total Spin: {data['TotalSpin']:.2f} rpm")

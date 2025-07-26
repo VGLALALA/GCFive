@@ -199,10 +199,10 @@ if __name__ == '__main__':
     multiprocessing.freeze_support()
     
 
-    test_img_path1 = "data/Images/frame_06210.jpg"
-    test_img_path2 = "data/Images/frame_06215.jpg"
+    test_img_path1 = "data/Images/frame0.png"
+    test_img_path2 = "data/Images/frame15.png"
 
-    delta_t = 0.01
+    delta_t = 10/1305
 
     test_img1 = cv2.imread(test_img_path1, cv2.IMREAD_GRAYSCALE)
     test_img2 = cv2.imread(test_img_path2, cv2.IMREAD_GRAYSCALE)
