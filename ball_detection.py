@@ -8,7 +8,6 @@ import cv_grab_callback # Import the monitoring module
 import queue
 import threading
 from ballDetectionyolo import detect_golfballs  # Import YOLO detection function
-
 def main_loop():
     # Setup camera and buffer using the helper function from cv_grab_callback
     hCamera, monoCamera = cv_grab_callback.setup_camera_and_buffer()
@@ -43,6 +42,9 @@ def main_loop():
             frame = np.frombuffer(frame_data, dtype=np.uint8)
             frame = frame.reshape((FrameHead.iHeight, FrameHead.iWidth, 1 if FrameHead.uiMediaType == mvsdk.CAMERA_MEDIA_TYPE_MONO8 else 3))
             
+            # Debug: Print frame info
+            print(f"Frame shape: {frame.shape}, dtype: {frame.dtype}, min: {frame.min()}, max: {frame.max()}")
+            
             # Convert to BGR for YOLO detection if it's a grayscale image
             if monoCamera:
                 frame_bgr = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
@@ -55,7 +57,6 @@ def main_loop():
             if detected_balls:
                 # Take the first detected ball
                 center_x, center_y, radius = detected_balls[0]
-                
                 print(f"Ball detected at position: ({center_x}, {center_y}) with radius: {radius}")
                 detected_circle = (center_x, center_y, radius)
                 ball_detected = True
@@ -92,6 +93,9 @@ def main_loop():
 
             # Display the frame during detection search
             cv2.imshow("Ball Detection - Press q to exit", frame_bgr)
+            
+            # Force display update
+            cv2.waitKey(1)
 
         except mvsdk.CameraException as e:
             if e.error_code != mvsdk.CAMERA_STATUS_TIME_OUT:

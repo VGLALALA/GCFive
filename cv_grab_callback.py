@@ -13,7 +13,17 @@ from ballDetectionyolo import detect_golfballs  # Import YOLO detection function
 
 # Global buffer variable (allocated in main thread, used by processing thread)
 pFrameBuffer_global = 0
-
+BALL_DIAM_MM            = 42.67
+THRESHOLD_APART_MM      = 80.0      # Minimum distance in mm for capture pairing
+DESIRED_EXPOSURE_US     = 50.0
+DESIRED_ANALOG_GAIN     = 1000.0
+DESIRED_GAMMA           = 0.25
+FPS_NOMINAL             = 1300.0    # Nominal frames per second for trajectory simulation
+DEBUG                   = True
+MAX_CAPTURE_FRAMES      = 100       # Maximum frames to capture in hitting mode
+SETUP_DET_INTERVAL      = 0.5       # Interval for detection in setup mode
+WAIT_TO_CAPTURE         = 1.5       # Time to hold still before entering hitting mode
+MOVEMENT_THRESHOLD_MM   = 2.0 
 # Add new global variables
 FRAMES_TO_CAPTURE = 30  # Number of frames to capture
 TARGET_FPS = 2000  # Target FPS for camera
@@ -50,15 +60,14 @@ def setup_camera_and_buffer():
 		else:
 			mvsdk.CameraSetIspOutFormat(hCamera, mvsdk.CAMERA_MEDIA_TYPE_BGR8)
 
-		# Set camera parameters for high-speed capture
-		mvsdk.CameraSetTriggerMode(hCamera, 0)  # Continuous mode
-		mvsdk.CameraSetFrameSpeed(hCamera, 2)   # Highest frame speed
-		mvsdk.CameraSetAeState(hCamera, 0)      # Manual exposure
-		mvsdk.CameraSetExposureTime(hCamera, 1)  # 1ms exposure for 800 FPS
-		mvsdk.CameraSetGain(hCamera, 100, 100, 100)  # Set RGB gains to 100
-		mvsdk.CameraSetAntiFlick(hCamera, 0)
-		# Set camera contrast to a higher value (example: 180)
-		mvsdk.CameraSetContrast(hCamera, 100 )
+		# Set camera parameters for proper image capture
+		mvsdk.CameraSetTriggerMode(hCamera, 0)
+		mvsdk.CameraSetAeState(hCamera, 0)
+		mvsdk.CameraSetExposureTime(hCamera, DESIRED_EXPOSURE_US)
+		gmin, gmax, _ = mvsdk.CameraGetAnalogGainXRange(hCamera)
+		mvsdk.CameraSetAnalogGainX(hCamera, max(gmin, min(DESIRED_ANALOG_GAIN, gmax)))
+		gamma_max = cap.sGammaRange.iMax
+		mvsdk.CameraSetGamma(hCamera, int(DESIRED_GAMMA * gamma_max))
 
 		# --- Set custom image resolution as requested ---
 		image_resolution = mvsdk.tSdkImageResolution()
@@ -76,8 +85,14 @@ def setup_camera_and_buffer():
 
 		mvsdk.CameraPlay(hCamera)
 
-		# Calculate buffer size using fixed resolution (640x300)
-		FrameBufferSize = 640 * 480 * (1 if monoCamera else 3)
+		# Get actual resolution from camera
+		actual_resolution = mvsdk.CameraGetImageResolution(hCamera)
+		actual_width = actual_resolution.iWidth
+		actual_height = actual_resolution.iHeight
+		print(f"Actual camera resolution: {actual_width}x{actual_height}")
+
+		# Calculate buffer size using actual resolution
+		FrameBufferSize = actual_width * actual_height * (1 if monoCamera else 3)
 		pFrameBuffer_global = mvsdk.CameraAlignMalloc(FrameBufferSize, 16)
 
 		return hCamera, monoCamera
@@ -119,7 +134,7 @@ def acquire_frames(hCamera, frame_queue, stop_event):
 def process_frames(hCamera, monoCamera, detected_circle, original_cropped_roi, frame_queue, stop_event):
 	print("Processing thread started.")
 	global recorded_frames, is_recording
-
+	first_frame_ball_pos = None
 	try:
 		x, y, r = detected_circle
 
@@ -209,6 +224,9 @@ def process_frames(hCamera, monoCamera, detected_circle, original_cropped_roi, f
 					# Record frames if we're in recording mode
 					if is_recording:
 						recorded_frames.append(gray_current.copy())
+						
+						# Detect ball position in first frame for reference
+						
 						# Print FPS instead of "Captured frame"
 						current_time = time.time()
 						elapsed_time = current_time - start_time
@@ -222,6 +240,15 @@ def process_frames(hCamera, monoCamera, detected_circle, original_cropped_roi, f
 							# Stop the acquisition thread before processing frames
 							stop_event.set()
 
+							# Use first frame ball position for distance calculation
+							if first_frame_ball_pos is not None:
+								first_x, first_y, first_r = first_frame_ball_pos
+								print(f"First frame ball position: ({first_x}, {first_y})")
+							else:
+								# Fallback to original detection position
+								first_x, first_y, first_r = detected_circle
+								print(f"Using original ball position: ({first_x}, {first_y})")
+							
 							# Process frames one at a time
 							for i in range(len(recorded_frames) - 1, -1, -1):
 								frame = recorded_frames[i]
@@ -235,7 +262,13 @@ def process_frames(hCamera, monoCamera, detected_circle, original_cropped_roi, f
 										frame_bgr = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
 									else:
 										frame_bgr = frame
-									circles = detect_golfballs(frame_bgr, conf=0.25, imgsz=640, display=False)
+									
+									# Ensure frame is 3-channel BGR
+									if frame_bgr.shape[2] != 3:
+										print(f"Warning: Frame has {frame_bgr.shape[2]} channels, converting to BGR")
+										frame_bgr = cv2.cvtColor(frame_bgr, cv2.COLOR_GRAY2BGR)
+									
+									circles = detect_golfballs(frame_bgr, conf=0.7, imgsz=640, display=False)
 								except Exception as e:
 									print("Error running YOLO detection:", e)
 									traceback.print_exc()
@@ -243,19 +276,56 @@ def process_frames(hCamera, monoCamera, detected_circle, original_cropped_roi, f
 
 								if circles is not None and len(circles) > 0:
 									print(f"Found {len(circles)} ball(s) in frame {i}")
+									
+									# Find the closest ball to original position
+									closest_circle = None
+									wanted_dist = 100
+									min_distance = float('inf')
+									
 									for circle in circles:
 										try:
 											x, y, r = map(int, circle)
-											cv2.circle(display_frame, (x, y), r, (0, 255, 0), 2)
-											cv2.circle(display_frame, (x, y), 2, (0, 0, 255), 3)
+											
+											# Calculate distance to first frame ball position
+											distance = np.sqrt((x - first_x)**2 + (y - first_y)**2)
+											
+											if abs(wanted_dist-distance) < min_distance:
+												min_distance = distance
+												closest_circle = (x, y, r, distance)
+												
+											print(f"  Ball at ({x}, {y}) - Distance to original: {distance:.1f} pixels")
+											
 										except Exception as e:
-											print("Error drawing detected circle:", e)
+											print("Error processing circle:", e)
 											traceback.print_exc()
+									
+									# Draw the closest detected ball
+									if closest_circle:
+										x, y, r, distance = closest_circle
+										cv2.circle(display_frame, (x, y), r, (0, 255, 0), 2)  # Green circle
+										cv2.circle(display_frame, (x, y), 2, (0, 0, 255), 3)  # Red center
+										
+										# Draw line to first frame position
+										cv2.line(display_frame, (x, y), (first_x, first_y), (255, 0, 0), 2)
+										
+										# Add distance text
+										cv2.putText(display_frame, f"Distance: {distance:.1f}px", 
+												   (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+										cv2.putText(display_frame, f"Detected: ({x}, {y})", 
+												   (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+										cv2.putText(display_frame, f"First Frame: ({first_x}, {first_y})", 
+												   (10, 90), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+										
+										print(f"  Closest ball: ({x}, {y}) - Distance: {distance:.1f} pixels")
+									else:
+										print("  No valid balls found")
+								else:
+									print("  No balls detected in this frame")
 
 								try:
 									cv2.imshow(f"Original Frame {i}", frame)
-									if circles is not None:
-										cv2.imshow(f"Frame {i} with circle", display_frame)
+									if circles is not None and len(circles) > 0:
+										cv2.imshow(f"Frame {i} with YOLO detection", display_frame)
 								except Exception as e:
 									print("Error displaying frame:", e)
 									traceback.print_exc()
@@ -267,15 +337,15 @@ def process_frames(hCamera, monoCamera, detected_circle, original_cropped_roi, f
 
 								try:
 									cv2.destroyWindow(f"Original Frame {i}")
-									if circles is not None:
-										cv2.destroyWindow(f"Frame {i} with circle")
+									if circles is not None and len(circles) > 0:
+										cv2.destroyWindow(f"Frame {i} with YOLO detection")
 								except Exception as e:
 									print("Error destroying window:", e)
 									traceback.print_exc()
-							# INSERT_YOUR_CODE
-							# Find, for each frame, the detected circle whose x is closest to 50, and display that frame and the original
+							# Find frame with ball closest to first frame position
+							print("\n=== Finding frame with ball closest to first frame position ===")
 							closest_idx = None
-							closest_diff = None
+							min_distance = float('inf')
 							closest_circle = None
 
 							for i, frame in enumerate(recorded_frames):
@@ -285,41 +355,70 @@ def process_frames(hCamera, monoCamera, detected_circle, original_cropped_roi, f
 										frame_bgr = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
 									else:
 										frame_bgr = frame
-									circles = detect_golfballs(frame_bgr, conf=0.25, imgsz=640, display=False)
+									
+									# Ensure frame is 3-channel BGR
+									if frame_bgr.shape[2] != 3:
+										print(f"Warning: Frame has {frame_bgr.shape[2]} channels, converting to BGR")
+										frame_bgr = cv2.cvtColor(frame_bgr, cv2.COLOR_GRAY2BGR)
+									
+									circles = detect_golfballs(frame_bgr, conf=0.7, imgsz=640, display=False)
 								except Exception as e:
-									print("Error running YOLO detection in closest search:", e)
-									traceback.print_exc()
-									circles = None
+									print(f"Error running YOLO detection in frame {i}:", e)
+									continue
+									
 								if circles is not None and len(circles) > 0:
 									for circle in circles:
 										try:
 											x, y, r = map(int, circle)
-											diff = abs(x - 100)
-											if closest_diff is None or diff < closest_diff:
-												closest_diff = diff
+											distance = np.sqrt((x - first_x)**2 + (y - first_y)**2)
+											
+											if distance < min_distance:
+												min_distance = distance
 												closest_idx = i
-												closest_circle = (x, y, r)
+												closest_circle = (x, y, r, distance)
+												
+											print(f"  Frame {i}: Ball at ({x}, {y}) - Distance: {distance:.1f}px")
+											
 										except Exception as e:
-											print("Error processing circle in closest search:", e)
-											traceback.print_exc()
+											print(f"Error processing circle in frame {i}:", e)
+											continue
 
 							if closest_idx is not None and closest_circle is not None:
 								try:
-									cv2.imshow(f"Original Frame (closest x to 50) idx={closest_idx}", recorded_frames[closest_idx])
+									x, y, r, distance = closest_circle
+									print(f"\nBest match: Frame {closest_idx} with ball at ({x}, {y}) - Distance: {distance:.1f}px")
+									
+									# Show first frame
+									cv2.imshow(f"First Frame {closest_idx}", recorded_frames[closest_idx])
+									
+									# Show frame with detection and distance info
 									disp = recorded_frames[closest_idx].copy()
-									x, y, r = closest_circle
-									cv2.circle(disp, (x, y), r, (0, 255, 0), 2)
-									cv2.circle(disp, (x, y), 2, (0, 0, 255), 3)
-									cv2.imshow(f"Frame with circle x closest to 50 (x={x})", disp)
-									print(f"Displayed frame {closest_idx} with circle x={x} closest to 50")
+									cv2.circle(disp, (x, y), r, (0, 255, 0), 2)  # Green circle
+									cv2.circle(disp, (x, y), 2, (0, 0, 255), 3)  # Red center
+									
+									# Draw line to first frame position
+									cv2.line(disp, (x, y), (first_x, first_y), (255, 0, 0), 2)
+									
+									# Add distance text
+									cv2.putText(disp, f"Distance: {distance:.1f}px", 
+											   (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+									cv2.putText(disp, f"Detected: ({x}, {y})", 
+											   (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+									cv2.putText(disp, f"First Frame: ({first_x}, {first_y})", 
+											   (10, 90), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+									cv2.putText(disp, f"Frame: {closest_idx}", 
+											   (10, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+									
+									cv2.imshow(f"Best Match - Frame {closest_idx}", disp)
+									print("Press any key to continue...")
 									cv2.waitKey(0)
-									cv2.destroyWindow(f"Original Frame (closest x to 50) idx={closest_idx}")
-									cv2.destroyWindow(f"Frame with circle x closest to 50 (x={x})")
+									cv2.destroyWindow(f"Original Frame {closest_idx}")
+									cv2.destroyWindow(f"Best Match - Frame {closest_idx}")
 								except Exception as e:
-									print("Error displaying/destroying closest frame:", e)
+									print("Error displaying best match frame:", e)
 									traceback.print_exc()
 							else:
-								print("No circles detected in any frame for x closest to 50.")
+								print("No balls detected in any frame.")
 							print("Frame processing complete")
 							try:
 								cv2.destroyAllWindows()
