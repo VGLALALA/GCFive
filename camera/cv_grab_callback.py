@@ -1,14 +1,11 @@
 #coding=utf-8
 import cv2
 import numpy as np
-import camera.mvsdk as mvsdk
+from camera.MVSCamera import MVSCamera
 import time
 import queue
 import traceback
 from image_processing.ballDetectionyolo import detect_golfballs  # Import YOLO detection function
-
-# Global buffer variable (allocated in main thread, used by processing thread)
-pFrameBuffer_global = 0
 BALL_DIAM_MM            = 42.67
 GOLF_BALL_RADIUS_MM = 21.335
 THRESHOLD_APART_MM      = 80.0      # Minimum distance in mm for capture pairing
@@ -28,111 +25,49 @@ recorded_frames = []
 is_recording = False
 
 def setup_camera_and_buffer():
-	global pFrameBuffer_global
-	try:
-		DevList = mvsdk.CameraEnumerateDevice()
-		nDev = len(DevList)
-		if nDev < 1:
-			print("No camera was found!")
-			return None, None
+        """Initialize and open the camera using the MVSCamera wrapper."""
+        try:
+                cam = MVSCamera(
+                        640, 280, 0, 120,
+                        DESIRED_EXPOSURE_US,
+                        DESIRED_ANALOG_GAIN,
+                        DESIRED_GAMMA,
+                )
+                cam.open()
+                return cam
+        except Exception as e:
+                print("Exception in setup_camera_and_buffer:", e)
+                traceback.print_exc()
+                return None
 
-		for i, DevInfo in enumerate(DevList):
-			print("{}: {} {}".format(i, DevInfo.GetFriendlyName(), DevInfo.GetPortType()))
-		i = 0 if nDev == 1 else int(input("Select camera: "))
-		DevInfo = DevList[i]
-		print(DevInfo)
+def release_camera_and_buffer(cam):
+        """Close the MVSCamera and free any buffers."""
+        try:
+                if cam:
+                        cam.close()
+        except Exception as e:
+                print("Exception in release_camera_and_buffer:", e)
+                traceback.print_exc()
 
-		hCamera = 0
-		try:
-			hCamera = mvsdk.CameraInit(DevInfo, -1, -1)
-		except mvsdk.CameraException as e:
-			print("CameraInit Failed({}): {}".format(e.error_code, e.message))
-			return None, None
-
-		cap = mvsdk.CameraGetCapability(hCamera)
-		monoCamera = (cap.sIspCapacity.bMonoSensor != 0)
-
-		if monoCamera:
-			mvsdk.CameraSetIspOutFormat(hCamera, mvsdk.CAMERA_MEDIA_TYPE_MONO8)
-		else:
-			mvsdk.CameraSetIspOutFormat(hCamera, mvsdk.CAMERA_MEDIA_TYPE_BGR8)
-
-		# Set camera parameters for proper image capture
-		mvsdk.CameraSetTriggerMode(hCamera, 0)
-		mvsdk.CameraSetAeState(hCamera, 0)
-		mvsdk.CameraSetExposureTime(hCamera, DESIRED_EXPOSURE_US)
-		gmin, gmax, _ = mvsdk.CameraGetAnalogGainXRange(hCamera)
-		mvsdk.CameraSetAnalogGainX(hCamera, max(gmin, min(DESIRED_ANALOG_GAIN, gmax)))
-		gamma_max = cap.sGammaRange.iMax
-		mvsdk.CameraSetGamma(hCamera, int(DESIRED_GAMMA * gamma_max))
-
-		# --- Set custom image resolution as requested ---
-		image_resolution = mvsdk.tSdkImageResolution()
-		image_resolution.iIndex = 0  # Custom index, or use an unused one
-		image_resolution.iWidth = 640
-		image_resolution.iHeight = 300
-		image_resolution.iWidthFOV = 640
-		image_resolution.iHeightFOV = 300
-		image_resolution.iOffsetX = 0
-		image_resolution.iOffsetY = 90
-		mvsdk.CameraSetImageResolution(hCamera, image_resolution)
-		print(mvsdk.CameraGetImageResolution(hCamera))
-		
-		# ------------------------------------------------
-
-		mvsdk.CameraPlay(hCamera)
-
-		# Get actual resolution from camera
-		actual_resolution = mvsdk.CameraGetImageResolution(hCamera)
-		actual_width = actual_resolution.iWidth
-		actual_height = actual_resolution.iHeight
-		print(f"Actual camera resolution: {actual_width}x{actual_height}")
-
-		# Calculate buffer size using actual resolution
-		FrameBufferSize = actual_width * actual_height * (1 if monoCamera else 3)
-		pFrameBuffer_global = mvsdk.CameraAlignMalloc(FrameBufferSize, 16)
-
-		return hCamera, monoCamera
-	except Exception as e:
-		print("Exception in setup_camera_and_buffer:", e)
-		traceback.print_exc()
-		return None, None
-
-def release_camera_and_buffer(hCamera):
-	global pFrameBuffer_global
-	try:
-		if hCamera:
-			mvsdk.CameraUnInit(hCamera)
-		if pFrameBuffer_global:
-			mvsdk.CameraAlignFree(pFrameBuffer_global)
-			pFrameBuffer_global = 0 # Reset global buffer
-	except Exception as e:
-		print("Exception in release_camera_and_buffer:", e)
-		traceback.print_exc()
-
-def acquire_frames(hCamera, frame_queue, stop_event):
-	print("Acquisition thread started.")
-	try:
-		while not stop_event.is_set():
-			try:
-				pRawData, FrameHead = mvsdk.CameraGetImageBuffer(hCamera, 1250)
-				# Put raw data and header into the queue
-				frame_queue.put((pRawData, FrameHead))
-			except mvsdk.CameraException as e:
-				if e.error_code != mvsdk.CAMERA_STATUS_TIME_OUT:
-					print(f"Acquisition thread camera error: {e.error_code} - {e.message}")
-					# Continue loop on timeout or other errors
-					pass
-	except Exception as e:
-		print("Exception in acquire_frames:", e)
-		traceback.print_exc()
-	print("Acquisition thread stopped.")
+def acquire_frames(cam, frame_queue, stop_event):
+        """Continuously grab frames from the camera and push them onto a queue."""
+        print("Acquisition thread started.")
+        try:
+                while not stop_event.is_set():
+                        try:
+                                frame = cam.grab()
+                                frame_queue.put(frame)
+                        except Exception as e:
+                                print(f"Acquisition thread camera error: {e}")
+        except Exception as e:
+                print("Exception in acquire_frames:", e)
+                traceback.print_exc()
+        print("Acquisition thread stopped.")
 
 
 
 # —————————————————————————————————————————————————————————————
 # globals (must be defined once elsewhere in your module):
-#   pFrameBuffer_global  # mvsdk image buffer pointer
 #   recorded_frames      # list to hold captured gray frames
 #   is_recording         # bool flag
 #   FRAMES_TO_CAPTURE    # int, how many frames to record
@@ -141,8 +76,7 @@ def acquire_frames(hCamera, frame_queue, stop_event):
 # —————————————————————————————————————————————————————————————
 import math
 from camera.focalPointCalibration import load_calibration
-def process_frames(hCamera,
-                   monoCamera,
+def process_frames(cam,
                    detected_circle,
                    original_cropped_roi,
                    frame_queue,
@@ -158,6 +92,7 @@ def process_frames(hCamera,
     """
     print("Processing thread started.")
     global recorded_frames, is_recording
+    monoCamera = cam.mono
 
     try:
         # 1) Unpack initial detection
@@ -180,23 +115,12 @@ def process_frames(hCamera,
         # ——— Phase A: wait for motion, then record FRAMES_TO_CAPTURE frames ———
         while not stop_event.is_set() or not frame_queue.empty():
             try:
-                pRaw, head = frame_queue.get(timeout=0.1)
+                frame = frame_queue.get(timeout=0.1)
             except queue.Empty:
                 continue
 
-            # convert raw buffer → numpy frame
-            mvsdk.CameraImageProcess(hCamera, pRaw, pFrameBuffer_global, head)
-            mvsdk.CameraReleaseImageBuffer(hCamera, pRaw)
-            arr = (mvsdk.c_ubyte * head.uBytes).from_address(pFrameBuffer_global)
-            frame = np.frombuffer(arr, dtype=np.uint8)
-            try:
-                frame = frame.reshape((
-                    head.iHeight,
-                    head.iWidth,
-                    1 if head.uiMediaType == mvsdk.CAMERA_MEDIA_TYPE_MONO8 else 3
-                ))
-            except Exception:
-                continue
+            if frame is None:
+                break
 
             gray = (cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                     if (not monoCamera and frame.ndim == 3) else frame)
