@@ -81,7 +81,7 @@ def process_frames(cam,
                    original_cropped_roi,
                    frame_queue,
                    stop_event,
-                   interactive=True):
+                   interactive=False):
     """
     Pull frames, watch ROI for motion, record a burst, then:
 
@@ -226,6 +226,12 @@ def process_frames(cam,
                 print(f"YOLO error in frame {idx}:", e)
                 continue
 
+            # Save frame 0 as the initial frame
+            if idx == 0:
+                initial_frame_filename = "initial_frame_0.png"
+                cv2.imwrite(initial_frame_filename, frm)
+                print(f"Initial frame saved as {initial_frame_filename}")
+
             for (cx, cy, rr) in circles:
                 # pixel‐space separation:
                 pd = math.hypot(cx - first_x_px, cy - first_y_px)
@@ -246,9 +252,10 @@ def process_frames(cam,
             cv2.line(disp, (cx, cy), (first_x_px, first_y_px), (255,0,0), 2)
             cv2.putText(disp, f"{sep_mm:.1f} mm", (10,30),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255,255,255), 2)
-            cv2.imshow(f"Best Match {best_idx}", disp)
-            cv2.waitKey(0)
-            cv2.destroyWindow(f"Best Match {best_idx}")
+            # Save the annotated frame instead of displaying it
+            output_filename = f"best_match_frame_{best_idx}.png"
+            cv2.imwrite(output_filename, disp)
+            print(f"Frame saved as {output_filename}")
         else:
             print("No valid detection found at the desired separation.")
 

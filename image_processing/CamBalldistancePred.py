@@ -41,10 +41,11 @@ def predict_distance_from_frame(frame):
     and return estimated distance in millimeters (or None if no detection).
     """
     dets = yolo_detect(frame, conf=YOLO_CONF, imgsz=YOLO_IMGSZ, display=False)
+    #print(dets)
     if not dets:
         return None
     # choose largest
     dets.sort(key=lambda t: t[2], reverse=True)
     _, _, r_px = dets[0]
-    print(f"Debug: Focal Length (px) = {focal_px}, Radius (px) = {r_px}")
+    #print(f"Debug: Focal Length (px) = {focal_px}, Radius (px) = {r_px}")
     return estimate_distance_mm(focal_px, r_px)

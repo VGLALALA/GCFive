@@ -45,6 +45,7 @@ def load_hitting_zone_samples(file_path="hitting_zone_calibration.json"):
 
 def is_point_in_zone(x, y):
     samples=load_hitting_zone_samples()
+    print(samples)
     """
     samples: list of four [x, y] corner coordinates, in any order
     x, y:   the point to test

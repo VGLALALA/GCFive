@@ -1,8 +1,7 @@
 import math
 from image_processing.CamBalldistancePred import predict_distance_from_frame, load_calibration
-from image_processing.ballDetection import detect_golfballs
 
-def get_ball_xz(frame, conf=0.25, imgsz=640, display=False):
+def get_ball_xz(frame, dets):
     """
     Given a BGR frame returns:
       • x_mm: horizontal offset (right-positive) relative to camera optical axis
@@ -21,7 +20,7 @@ def get_ball_xz(frame, conf=0.25, imgsz=640, display=False):
         return None  # no ball detected
 
     # 2) Find the ball in pixels
-    dets = detect_golfballs(frame, conf=conf, imgsz=imgsz, display=display)
+    
     if not dets:
         return None
 

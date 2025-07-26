@@ -8,7 +8,8 @@ import threading
 from camera.hittingZoneCalibration import calibrate_hitting_zone_stream
 from image_processing.ballDetectionyolo import detect_golfballs  # Import YOLO detection function
 from image_processing.ballinZoneCheck import is_point_in_zone  # Import the zone check function
-
+from image_processing.get2Dcoord import get_ball_xz
+RECALIBRATE_HITTING_ZONE = False
 def main():
     # Setup camera using the helper function from cv_grab_callback
     cam = cv_grab_callback.setup_camera_and_buffer()
@@ -17,9 +18,9 @@ def main():
         return
 
     monoCamera = cam.mono
-
+    if RECALIBRATE_HITTING_ZONE:
     # Perform hitting zone calibration using the same camera settings
-    calibrate_hitting_zone_stream(cam=cam)
+        calibrate_hitting_zone_stream(cam=cam)
 
     # The global buffer is allocated in setup_camera_and_buffer now
     # pFrameBuffer = cv_grab_callback.pFrameBuffer_global 
@@ -38,7 +39,7 @@ def main():
             frame = cam.grab()
 
             # Debug: Print frame info
-            print(f"Frame shape: {frame.shape}, dtype: {frame.dtype}, min: {frame.min()}, max: {frame.max()}")
+            #print(f"Frame shape: {frame.shape}, dtype: {frame.dtype}, min: {frame.min()}, max: {frame.max()}")
             
             # Convert to BGR for YOLO detection if it's a grayscale image
             if monoCamera:
@@ -47,17 +48,17 @@ def main():
                 frame_bgr = frame
 
             # Use YOLO to detect golf balls
-            detected_balls = detect_golfballs(frame_bgr, conf=0.25, imgsz=640, display=False)
-
+            detected_balls = detect_golfballs(frame_bgr, conf=0.9, imgsz=640, display=False)
+            ballx, ballz = get_ball_xz(frame_bgr, detected_balls)
             if detected_balls:
                 # Take the first detected ball
                 center_x, center_y, radius = detected_balls[0]
-                print(f"Ball detected at position: ({center_x}, {center_y}) with radius: {radius}")
+                print(f"Ball detected at position: ({ballx}, {ballz}) with radius: {radius}")
                 detected_circle = (center_x, center_y, radius)
-
+                
                 # Check if the detected ball is within the predefined zone
                 
-                if is_point_in_zone(center_x, center_y):
+                if is_point_in_zone(ballx, ballz):
                     print("Ball is within the zone.")
                     ball_detected = True
                 else:
@@ -94,11 +95,7 @@ def main():
                 # Break the detection loop
                 break
 
-            # Display the frame during detection search
-            cv2.imshow("Ball Detection - Press q to exit", frame_bgr)
             
-            # Force display update
-            cv2.waitKey(1)
 
         except Exception as e:
             print(f"Camera grab failed: {e}")
