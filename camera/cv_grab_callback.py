@@ -6,76 +6,69 @@ import time
 import queue
 import traceback
 from image_processing.ballDetectionyolo import detect_golfballs  # Import YOLO detection function
-BALL_DIAM_MM            = 42.67
+BALL_DIAM_MM = 42.67
 GOLF_BALL_RADIUS_MM = 21.335
-THRESHOLD_APART_MM      = 80.0      # Minimum distance in mm for capture pairing
-DESIRED_EXPOSURE_US     = 50.0
-DESIRED_ANALOG_GAIN     = 1000.0
-DESIRED_GAMMA           = 0.25
-FPS_NOMINAL             = 1300.0    # Nominal frames per second for trajectory simulation
-DEBUG                   = True
-MAX_CAPTURE_FRAMES      = 100       # Maximum frames to capture in hitting mode
-SETUP_DET_INTERVAL      = 0.5       # Interval for detection in setup mode
-WAIT_TO_CAPTURE         = 1.5       # Time to hold still before entering hitting mode
-MOVEMENT_THRESHOLD_MM   = 2.0 
+THRESHOLD_APART_MM = 80.0  # Minimum distance in mm for capture pairing
+DESIRED_EXPOSURE_US = 50.0
+DESIRED_ANALOG_GAIN = 1000.0
+DESIRED_GAMMA = 0.25
+FPS_NOMINAL = 1300.0  # Nominal frames per second for trajectory simulation
+DEBUG = True
+MAX_CAPTURE_FRAMES = 100  # Maximum frames to capture in hitting mode
+SETUP_DET_INTERVAL = 0.5  # Interval for detection in setup mode
+WAIT_TO_CAPTURE = 1.5  # Time to hold still before entering hitting mode
+MOVEMENT_THRESHOLD_MM = 2.0
 # Add new global variables
 FRAMES_TO_CAPTURE = 30  # Number of frames to capture
 TARGET_FPS = 2000  # Target FPS for camera
 recorded_frames = []
 is_recording = False
+INITIAL_IDX, BEST_IDX = None, None
+INITIAL_FRAME, BEST_FRAME = None, None  # Corrected typo from INTIAL_FRAME
 
 def setup_camera_and_buffer():
-        """Initialize and open the camera using the MVSCamera wrapper."""
-        try:
-                cam = MVSCamera(
-                        640, 280, 0, 120,
-                        DESIRED_EXPOSURE_US,
-                        DESIRED_ANALOG_GAIN,
-                        DESIRED_GAMMA,
-                )
-                cam.open()
-                return cam
-        except Exception as e:
-                print("Exception in setup_camera_and_buffer:", e)
-                traceback.print_exc()
-                return None
+    """Initialize and open the camera using the MVSCamera wrapper."""
+    try:
+        cam = MVSCamera(
+            640, 280, 0, 120,
+            DESIRED_EXPOSURE_US,
+            DESIRED_ANALOG_GAIN,
+            DESIRED_GAMMA,
+        )
+        cam.open()
+        return cam
+    except Exception as e:
+        print("Exception in setup_camera_and_buffer:", e)
+        traceback.print_exc()
+        return None
 
 def release_camera_and_buffer(cam):
-        """Close the MVSCamera and free any buffers."""
-        try:
-                if cam:
-                        cam.close()
-        except Exception as e:
-                print("Exception in release_camera_and_buffer:", e)
-                traceback.print_exc()
+    """Close the MVSCamera and free any buffers."""
+    try:
+        if cam:
+            cam.close()
+    except Exception as e:
+        print("Exception in release_camera_and_buffer:", e)
+        traceback.print_exc()
 
 def acquire_frames(cam, frame_queue, stop_event):
-        """Continuously grab frames from the camera and push them onto a queue."""
-        print("Acquisition thread started.")
-        try:
-                while not stop_event.is_set():
-                        try:
-                                frame = cam.grab()
-                                frame_queue.put(frame)
-                        except Exception as e:
-                                print(f"Acquisition thread camera error: {e}")
-        except Exception as e:
-                print("Exception in acquire_frames:", e)
-                traceback.print_exc()
-        print("Acquisition thread stopped.")
+    """Continuously grab frames from the camera and push them onto a queue."""
+    print("Acquisition thread started.")
+    try:
+        while not stop_event.is_set():
+            try:
+                frame = cam.grab()
+                frame_queue.put(frame)
+            except Exception as e:
+                print(f"Acquisition thread camera error: {e}")
+    except Exception as e:
+        print("Exception in acquire_frames:", e)
+        traceback.print_exc()
+    print("Acquisition thread stopped.")
 
-
-
-# —————————————————————————————————————————————————————————————
-# globals (must be defined once elsewhere in your module):
-#   recorded_frames      # list to hold captured gray frames
-#   is_recording         # bool flag
-#   FRAMES_TO_CAPTURE    # int, how many frames to record
-#   GOLF_BALL_RADIUS_MM  = 21.335  # mm
-#   FRAME_APART_MM       = 80.0    # target separation in mm
-# —————————————————————————————————————————————————————————————
 import math
 from camera.focalPointCalibration import load_calibration
+
 def process_frames(cam,
                    detected_circle,
                    original_cropped_roi,
@@ -91,7 +84,7 @@ def process_frames(cam,
 
     """
     print("Processing thread started.")
-    global recorded_frames, is_recording
+    global recorded_frames, is_recording, INITIAL_FRAME, BEST_FRAME, INITIAL_IDX, BEST_IDX
     monoCamera = cam.mono
 
     try:
@@ -167,49 +160,9 @@ def process_frames(cam,
         # estimate first frame depth:
         z0_mm = (GOLF_BALL_RADIUS_MM * focal_px) / first_r_px
 
-        # ——— 1) Optional interactive pass ———
-        if interactive:
-            print("\n--- Interactive inspection (newest→oldest) ---")
-            for idx in range(len(recorded_frames)-1, -1, -1):
-                frm = recorded_frames[idx]
-                disp = frm.copy()
-
-                # prep BGR for YOLO
-                if frm.ndim == 2:
-                    bgr = cv2.cvtColor(frm, cv2.COLOR_GRAY2BGR)
-                else:
-                    bgr = frm
-                if bgr.shape[2] != 3:
-                    bgr = cv2.cvtColor(bgr, cv2.COLOR_GRAY2BGR)
-
-                try:
-                    circles = detect_golfballs(bgr, conf=0.7, imgsz=640, display=False)
-                except Exception as e:
-                    print("YOLO error:", e)
-                    circles = []
-
-                if circles:
-                    print(f"Frame {idx}: {len(circles)} detections")
-                    # annotate all
-                    for (cx, cy, rr) in circles:
-                        cv2.circle(disp, (int(cx),int(cy)), int(rr), (0,255,0), 2)
-                    # also draw reference center
-                    cv2.circle(disp, (first_x_px, first_y_px), 3, (0,0,255), -1)
-                else:
-                    print(f"Frame {idx}: no detection")
-
-                cv2.imshow(f"Orig {idx}", frm)
-                cv2.imshow(f"Detect {idx}", disp)
-                if cv2.waitKey(0) == ord('q'):
-                    break
-                cv2.destroyWindow(f"Orig {idx}")
-                cv2.destroyWindow(f"Detect {idx}")
-            print("Interactive inspection done.")
-
         # ——— 2) Auto best‑match pass: find frame ≈ FRAME_APART_MM apart ———
         print("\n=== Auto best‑match for separation ≈", THRESHOLD_APART_MM, "mm ===")
         best_idx, best_score = None, float('inf')
-        best_info = None
 
         for idx, frm in enumerate(recorded_frames):
             # prep for YOLO
@@ -226,12 +179,6 @@ def process_frames(cam,
                 print(f"YOLO error in frame {idx}:", e)
                 continue
 
-            # Save frame 0 as the initial frame
-            if idx == 0:
-                initial_frame_filename = "initial_frame_0.png"
-                cv2.imwrite(initial_frame_filename, frm)
-                print(f"Initial frame saved as {initial_frame_filename}")
-
             for (cx, cy, rr) in circles:
                 # pixel‐space separation:
                 pd = math.hypot(cx - first_x_px, cy - first_y_px)
@@ -242,25 +189,13 @@ def process_frames(cam,
                 if score < best_score:
                     best_score = score
                     best_idx = idx
-                    best_info = (int(cx), int(cy), int(rr), sep_mm)
 
-        if best_idx is not None:
-            cx, cy, rr, sep_mm = best_info
-            print(f"\nBest match: frame {best_idx} → {sep_mm:.1f} mm apart")
-            disp = recorded_frames[best_idx].copy()
-            cv2.circle(disp, (cx, cy), rr, (0,255,0), 2)
-            cv2.line(disp, (cx, cy), (first_x_px, first_y_px), (255,0,0), 2)
-            cv2.putText(disp, f"{sep_mm:.1f} mm", (10,30),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255,255,255), 2)
-            # Save the annotated frame instead of displaying it
-            output_filename = f"best_match_frame_{best_idx}.png"
-            cv2.imwrite(output_filename, disp)
-            print(f"Frame saved as {output_filename}")
-        else:
+        if best_idx is None:
             print("No valid detection found at the desired separation.")
-
+        else:
+            INITIAL_FRAME, BEST_FRAME = recorded_frames[0], recorded_frames[best_idx]
+            INITIAL_IDX, BEST_IDX = 0, best_idx
         print("Processing complete.")
-        cv2.destroyAllWindows()
 
     except Exception as e:
         print("Exception in process_frames:", e)
@@ -270,3 +205,6 @@ def process_frames(cam,
         try: cv2.destroyAllWindows()
         except: pass
         print("Processing thread stopped.")
+
+def retriveData():
+    return INITIAL_FRAME, BEST_FRAME, INITIAL_IDX, BEST_IDX

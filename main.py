@@ -5,12 +5,22 @@ import time
 import camera.cv_grab_callback as cv_grab_callback  # Import the monitoring module
 import queue
 import threading
+import math
 from camera.hittingZoneCalibration import calibrate_hitting_zone_stream
 from image_processing.ballDetectionyolo import detect_golfballs  # Import YOLO detection function
 from image_processing.ballinZoneCheck import is_point_in_zone  # Import the zone check function
 from image_processing.get2Dcoord import get_ball_xz
+from spin.GetBallRotation import get_fine_ball_rotation
+from spin.spinAxis import calculate_spin_axis
+from spin.GetLaunchAngle import calculate_launch_angle
+from image_processing.ballSpeedCalculation import calculate_ball_speed
+from trajectory_simulation.flightDataCalculation import get_trajectory_metrics
 RECALIBRATE_HITTING_ZONE = False
+FPS = 1300
+DELTA_T = 1/FPS
+
 def main():
+    initial_frame, best_match_frame = None, None
     # Setup camera using the helper function from cv_grab_callback
     cam = cv_grab_callback.setup_camera_and_buffer()
     if cam is None:
@@ -19,11 +29,8 @@ def main():
 
     monoCamera = cam.mono
     if RECALIBRATE_HITTING_ZONE:
-    # Perform hitting zone calibration using the same camera settings
+        # Perform hitting zone calibration using the same camera settings
         calibrate_hitting_zone_stream(cam=cam)
-
-    # The global buffer is allocated in setup_camera_and_buffer now
-    # pFrameBuffer = cv_grab_callback.pFrameBuffer_global 
 
     print("Searching for ball... Press 'q' to exit.")
 
@@ -38,9 +45,6 @@ def main():
             # Grab a frame from the camera
             frame = cam.grab()
 
-            # Debug: Print frame info
-            #print(f"Frame shape: {frame.shape}, dtype: {frame.dtype}, min: {frame.min()}, max: {frame.max()}")
-            
             # Convert to BGR for YOLO detection if it's a grayscale image
             if monoCamera:
                 frame_bgr = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
@@ -57,7 +61,6 @@ def main():
                 detected_circle = (center_x, center_y, radius)
                 
                 # Check if the detected ball is within the predefined zone
-                
                 if is_point_in_zone(ballx, ballz):
                     print("Ball is within the zone.")
                     ball_detected = True
@@ -74,7 +77,6 @@ def main():
                 y2 = min(frame_bgr.shape[0], center_y + half_crop)
 
                 # Crop the region around the ball and make a deep copy
-                # Use grayscale for ROI if original was grayscale
                 if monoCamera:
                     original_cropped_roi = frame[y1:y2, x1:x2].copy()
                 else:
@@ -95,15 +97,13 @@ def main():
                 # Break the detection loop
                 break
 
-            
-
         except Exception as e:
             print(f"Camera grab failed: {e}")
             pass  # Continue loop on errors
 
     # --- Start Monitoring if ball was detected ---
     if ball_detected and cam:
-        print("Starting monitoring...") # This print is also in the process_frames thread, can keep either or both
+        print("Starting monitoring...")
 
         # Create queue and stop event
         frame_queue = queue.Queue(maxsize=10) # Limit queue size
@@ -120,15 +120,17 @@ def main():
         # Main thread loop to keep program alive and handle events
         print("Press 'q' to stop monitoring.")
         while not stop_event.is_set() and (cv2.waitKey(1) & 0xFF) != ord('q'):
-            # The processing thread handles its own display updates
             time.sleep(0.01) # Small sleep to prevent busy waiting
 
         # Signal threads to stop and wait for them to finish
         stop_event.set()
         acquire_thread.join()
-        # Put a sentinel value in the queue to signal the processing thread to exit the queue.get() block
         frame_queue.put(None)
         process_thread.join()
+
+        # Retrieve the initial and best match frames from the processing thread
+        initial_frame, best_match_frame, initial_idx, best_idx = cv_grab_callback.retriveData()
+        delta_idx = best_idx - initial_idx
 
         print("Monitoring stopped.")
 
@@ -136,5 +138,35 @@ def main():
     cv_grab_callback.release_camera_and_buffer(cam)
     print("Camera and buffer released.")
 
+    best_rot_x, best_rot_y, best_rot_z = get_fine_ball_rotation(initial_frame, best_match_frame)
+    side_spin_rpm = math.abs((best_rot_x / (DELTA_T * delta_idx)) * (60 / 360))
+    back_spin_rpm = math.abs((best_rot_y / (DELTA_T * delta_idx)) * (60 / 360))
+    spin_axis = calculate_spin_axis(back_spin_rpm, side_spin_rpm)
+    launch_angle = calculate_launch_angle(initial_frame, best_match_frame)
+    ball_speed_mph = calculate_ball_speed(initial_frame, best_match_frame, DELTA_T * delta_idx, return_mph=True)
+    data = {
+        "Speed": ball_speed_mph,
+        "VLA": launch_angle,
+        "HLA": 0,
+        "TotalSpin":  math.hypot(back_spin_rpm, side_spin_rpm),
+        "SpinAxis": spin_axis
+    }
+    trajectory_data, postitions = get_trajectory_metrics(data)
+    carry = trajectory_data["carry_distance"]
+    total = trajectory_data["total_distance"]
+    apex = trajectory_data["apex"]
+    hangtime = trajectory_data["time_of_flight"]
+    desc_angle = trajectory_data["descending_angle"]
+    print(f"Ball Speed: {ball_speed_mph:.2f} mph")
+    print(f"Vertical Launch Angle: {launch_angle:.2f} degrees")
+    print(f"Total Spin: {data['TotalSpin']:.2f} rpm")
+    print(f"Side Spin: {side_spin_rpm:.2f} rpm")
+    print(f"Back Spin: {back_spin_rpm:.2f} rpm")
+    print(f"Spin Axis: {spin_axis:.2f} degrees")
+    print(f"Carry Distance: {carry:.2f} yd")
+    print(f"Total Distance: {total:.2f} yd")
+    print(f"Time of Flight: {hangtime:.2f} s")
+    print(f"Apex Height: {apex:.2f} ft")
+    print(f"Descending Angle: {desc_angle:.2f} degrees")
 if __name__ == "__main__":
     main() 

@@ -9,8 +9,7 @@ from trajectory_simulation.ball import Ball  # Ensure this module is accessible
 # Cell 2: Trajectory Simulation Functions
 def simulate_shot(data, delta=0.01, max_time=20.0):
     
-    ball = Ball(
-    )
+    ball = Ball()
     ball.hit_from_data(data)
     positions = [ball.position.copy()]
     time = 0.0
@@ -53,7 +52,7 @@ def calculate_descending_angle(positions, landing_index):
     angle_rad = np.arctan2(-delta_y, np.linalg.norm(delta_xz))
     return np.degrees(angle_rad)
 
-def get_trajectory_metrics(data, delta, max_time=20.0):
+def get_trajectory_metrics(data):
     """
     Simulate the shot and calculate carry distance, total distance, apex height,
     time of flight, and descending angle.
@@ -72,7 +71,7 @@ def get_trajectory_metrics(data, delta, max_time=20.0):
     dict
         Dictionary containing carry distance, total distance, apex height, time of flight, and descending angle.
     """
-    positions, flight_time = simulate_shot(data, delta, max_time)
+    positions, flight_time = simulate_shot(data)
     before_rolling_index = next(i for i, pos in enumerate(positions) if pos[1] <= 0.0)
     carry_distance = np.linalg.norm(positions[before_rolling_index][[0, 2]]) * 1.09361
     total_distance = np.linalg.norm(positions[-1][[0, 2]]) * 1.09361

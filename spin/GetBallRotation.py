@@ -80,17 +80,17 @@ def get_fine_ball_rotation(
     cv2.waitKey(0)
     cv2.destroyAllWindows()
     # Remove specular reflections
-    gaberRefRemoved1 = remove_reflections(ball1img, edge1)
-    gaberRefRemoved2 = remove_reflections(ball2img, edge2)
-    cv2.imshow("Gaber Ref Removed 1", gaberRefRemoved1)
-    cv2.imshow("Gaber Ref Removed 2", gaberRefRemoved2)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    #gaberRefRemoved1 = remove_reflections(ball1img, edge1)
+    #gaberRefRemoved2 = remove_reflections(ball2img, edge2)
+    # cv2.imshow("Gaber Ref Removed 1", gaberRefRemoved1)
+    # cv2.imshow("Gaber Ref Removed 2", gaberRefRemoved2)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
     # Mask out everything outside the ball's circle
     print(ball1,ball2)
     FINAL_MASK_FACTOR = 0.92
-    gaberRefRemoved1 = mask_area_outside_ball(gaberRefRemoved1, ball1, FINAL_MASK_FACTOR)
-    gaberRefRemoved2 = mask_area_outside_ball(gaberRefRemoved2, ball2, FINAL_MASK_FACTOR)
+    gaberRefRemoved1 = mask_area_outside_ball(edge1, ball1, FINAL_MASK_FACTOR)
+    gaberRefRemoved2 = mask_area_outside_ball(edge2, ball2, FINAL_MASK_FACTOR)
 
     cv2.imshow("Gaber Ref Removed 1", gaberRefRemoved1)
     cv2.imshow("Gaber Ref Removed 2", gaberRefRemoved2)
