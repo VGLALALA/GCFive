@@ -1,20 +1,21 @@
 #coding=utf-8
 import cv2
 import numpy as np
-import camera.mvsdk as mvsdk
 import time
-import camera.cv_grab_callback as cv_grab_callback # Import the monitoring module
+import camera.cv_grab_callback as cv_grab_callback  # Import the monitoring module
 import queue
 import threading
 from image_processing.ballDetectionyolo import detect_golfballs  # Import YOLO detection function
 from image_processing.ballinZoneCheck import is_point_in_zone  # Import the zone check function
 
 def main():
-    # Setup camera and buffer using the helper function from cv_grab_callback
-    hCamera, monoCamera = cv_grab_callback.setup_camera_and_buffer()
-    if hCamera is None:
+    # Setup camera using the helper function from cv_grab_callback
+    cam = cv_grab_callback.setup_camera_and_buffer()
+    if cam is None:
         print("Failed to set up camera.")
         return
+
+    monoCamera = cam.mono
 
     # The global buffer is allocated in setup_camera_and_buffer now
     # pFrameBuffer = cv_grab_callback.pFrameBuffer_global 
@@ -29,17 +30,9 @@ def main():
     # Capture frames until ball detected or 'q' pressed
     while not ball_detected and (cv2.waitKey(1) & 0xFF) != ord('q'):
         try:
-            # Get a frame from camera for detection
-            pRawData, FrameHead = mvsdk.CameraGetImageBuffer(hCamera, 1250)
-            # Process into the global buffer for display/processing
-            mvsdk.CameraImageProcess(hCamera, pRawData, cv_grab_callback.pFrameBuffer_global, FrameHead)
-            mvsdk.CameraReleaseImageBuffer(hCamera, pRawData)
-            
-            # Convert frame to OpenCV format
-            frame_data = (mvsdk.c_ubyte * FrameHead.uBytes).from_address(cv_grab_callback.pFrameBuffer_global)
-            frame = np.frombuffer(frame_data, dtype=np.uint8)
-            frame = frame.reshape((FrameHead.iHeight, FrameHead.iWidth, 1 if FrameHead.uiMediaType == mvsdk.CAMERA_MEDIA_TYPE_MONO8 else 3))
-            
+            # Grab a frame from the camera
+            frame = cam.grab()
+
             # Debug: Print frame info
             print(f"Frame shape: {frame.shape}, dtype: {frame.dtype}, min: {frame.min()}, max: {frame.max()}")
             
@@ -103,13 +96,12 @@ def main():
             # Force display update
             cv2.waitKey(1)
 
-        except mvsdk.CameraException as e:
-            if e.error_code != mvsdk.CAMERA_STATUS_TIME_OUT:
-                print("CameraGetImageBuffer failed({}): {}".format(e.error_code, e.message))
-            pass # Continue loop on timeout or other camera errors
+        except Exception as e:
+            print(f"Camera grab failed: {e}")
+            pass  # Continue loop on errors
 
     # --- Start Monitoring if ball was detected ---
-    if ball_detected and hCamera:
+    if ball_detected and cam:
         print("Starting monitoring...") # This print is also in the process_frames thread, can keep either or both
 
         # Create queue and stop event
@@ -117,11 +109,11 @@ def main():
         stop_event = threading.Event()
 
         # Create and start acquisition thread
-        acquire_thread = threading.Thread(target=cv_grab_callback.acquire_frames, args=(hCamera, frame_queue, stop_event))
+        acquire_thread = threading.Thread(target=cv_grab_callback.acquire_frames, args=(cam, frame_queue, stop_event))
         acquire_thread.start()
 
         # Create and start processing thread
-        process_thread = threading.Thread(target=cv_grab_callback.process_frames, args=(hCamera, monoCamera, detected_circle, original_cropped_roi, frame_queue, stop_event))
+        process_thread = threading.Thread(target=cv_grab_callback.process_frames, args=(cam, detected_circle, original_cropped_roi, frame_queue, stop_event))
         process_thread.start()
 
         # Main thread loop to keep program alive and handle events
@@ -140,7 +132,7 @@ def main():
         print("Monitoring stopped.")
 
     # --- Release camera and buffer ---
-    cv_grab_callback.release_camera_and_buffer(hCamera)
+    cv_grab_callback.release_camera_and_buffer(cam)
     print("Camera and buffer released.")
 
 if __name__ == "__main__":
