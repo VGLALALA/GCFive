@@ -7,6 +7,7 @@ import time
 import cv_grab_callback # Import the monitoring module
 import queue
 import threading
+from ballDetectionyolo import detect_golfballs  # Import YOLO detection function
 
 def main_loop():
     # Setup camera and buffer using the helper function from cv_grab_callback
@@ -42,35 +43,18 @@ def main_loop():
             frame = np.frombuffer(frame_data, dtype=np.uint8)
             frame = frame.reshape((FrameHead.iHeight, FrameHead.iWidth, 1 if FrameHead.uiMediaType == mvsdk.CAMERA_MEDIA_TYPE_MONO8 else 3))
             
-            # Convert to grayscale for detection if it's a color image
-            if not monoCamera:
-                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            # Convert to BGR for YOLO detection if it's a grayscale image
+            if monoCamera:
+                frame_bgr = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
             else:
-                gray = frame
+                frame_bgr = frame
 
-            # Apply Gaussian blur to reduce noise
-            blurred = cv2.GaussianBlur(gray, (9, 9), 2)
+            # Use YOLO to detect golf balls
+            detected_balls = detect_golfballs(frame_bgr, conf=0.25, imgsz=640, display=False)
 
-            # Detect circles using Hough transform
-            circles = cv2.HoughCircles(
-                gray,
-                cv2.HOUGH_GRADIENT,
-                dp=1,
-                minDist=50,
-                param1=50,
-                param2=30,
-                minRadius=15,
-                maxRadius=60
-            )
-
-            if circles is not None:
-                circles = np.uint16(np.around(circles))
-                # Assuming the largest circle is the ball (or just take the first one)
-                i = circles[0, 0] # Take the first detected circle
-                
-                # Get ball center and radius
-                center_x, center_y = i[0], i[1]
-                radius = i[2]
+            if detected_balls:
+                # Take the first detected ball
+                center_x, center_y, radius = detected_balls[0]
                 
                 print(f"Ball detected at position: ({center_x}, {center_y}) with radius: {radius}")
                 detected_circle = (center_x, center_y, radius)
@@ -81,18 +65,22 @@ def main_loop():
                 half_crop = crop_size // 2
                 x1 = max(0, center_x - half_crop)
                 y1 = max(0, center_y - half_crop)
-                x2 = min(gray.shape[1], center_x + half_crop)
-                y2 = min(gray.shape[0], center_y + half_crop)
+                x2 = min(frame_bgr.shape[1], center_x + half_crop)
+                y2 = min(frame_bgr.shape[0], center_y + half_crop)
 
                 # Crop the region around the ball and make a deep copy
-                original_cropped_roi = gray[y1:y2, x1:x2].copy()
+                # Use grayscale for ROI if original was grayscale
+                if monoCamera:
+                    original_cropped_roi = frame[y1:y2, x1:x2].copy()
+                else:
+                    original_cropped_roi = cv2.cvtColor(frame_bgr[y1:y2, x1:x2], cv2.COLOR_BGR2GRAY).copy()
 
                 # Draw the detected circle
-                cv2.circle(frame, (center_x, center_y), radius, (0, 255, 0), 2)
-                cv2.circle(frame, (center_x, center_y), 2, (0, 0, 255), 3)
+                cv2.circle(frame_bgr, (center_x, center_y), radius, (0, 255, 0), 2)
+                cv2.circle(frame_bgr, (center_x, center_y), 2, (0, 0, 255), 3)
 
                 # Display the frame with detection and the cropped ROI
-                cv2.imshow("Ball Detection - Press q to exit", frame)
+                cv2.imshow("Ball Detection - Press q to exit", frame_bgr)
                 cv2.imshow("Detected Ball (Cropped)", original_cropped_roi)
 
                 print("Ball detected! Press any key in a display window to start monitoring.")
@@ -103,7 +91,7 @@ def main_loop():
                 break
 
             # Display the frame during detection search
-            cv2.imshow("Ball Detection - Press q to exit", frame)
+            cv2.imshow("Ball Detection - Press q to exit", frame_bgr)
 
         except mvsdk.CameraException as e:
             if e.error_code != mvsdk.CAMERA_STATUS_TIME_OUT:

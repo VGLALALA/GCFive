@@ -9,6 +9,7 @@ import queue
 from datetime import datetime
 import sys
 import traceback
+from ballDetectionyolo import detect_golfballs  # Import YOLO detection function
 
 # Global buffer variable (allocated in main thread, used by processing thread)
 pFrameBuffer_global = 0
@@ -229,24 +230,20 @@ def process_frames(hCamera, monoCamera, detected_circle, original_cropped_roi, f
 								display_frame = frame.copy()
 
 								try:
-									circles = cv2.HoughCircles(
-										frame,
-										cv2.HOUGH_GRADIENT,
-										dp=1,
-										minDist=50,
-										param1=50,
-										param2=30,
-										minRadius=20,
-										maxRadius=100
-									)
+									# Convert grayscale frame to BGR for YOLO detection
+									if len(frame.shape) == 2:
+										frame_bgr = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
+									else:
+										frame_bgr = frame
+									circles = detect_golfballs(frame_bgr, conf=0.25, imgsz=640, display=False)
 								except Exception as e:
-									print("Error running HoughCircles:", e)
+									print("Error running YOLO detection:", e)
 									traceback.print_exc()
 									circles = None
 
-								if circles is not None:
-									print(f"Found circle in frame {i}")
-									for circle in circles[0]:
+								if circles is not None and len(circles) > 0:
+									print(f"Found {len(circles)} ball(s) in frame {i}")
+									for circle in circles:
 										try:
 											x, y, r = map(int, circle)
 											cv2.circle(display_frame, (x, y), r, (0, 255, 0), 2)
@@ -283,22 +280,18 @@ def process_frames(hCamera, monoCamera, detected_circle, original_cropped_roi, f
 
 							for i, frame in enumerate(recorded_frames):
 								try:
-									circles = cv2.HoughCircles(
-										frame,
-										cv2.HOUGH_GRADIENT,
-										dp=1,
-										minDist=50,
-										param1=50,
-										param2=30,
-										minRadius=20,
-										maxRadius=100
-									)
+									# Convert grayscale frame to BGR for YOLO detection
+									if len(frame.shape) == 2:
+										frame_bgr = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
+									else:
+										frame_bgr = frame
+									circles = detect_golfballs(frame_bgr, conf=0.25, imgsz=640, display=False)
 								except Exception as e:
-									print("Error running HoughCircles in closest search:", e)
+									print("Error running YOLO detection in closest search:", e)
 									traceback.print_exc()
 									circles = None
-								if circles is not None:
-									for circle in circles[0]:
+								if circles is not None and len(circles) > 0:
+									for circle in circles:
 										try:
 											x, y, r = map(int, circle)
 											diff = abs(x - 100)
