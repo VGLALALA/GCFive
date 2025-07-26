@@ -26,8 +26,25 @@ def _point_in_poly(x, y, poly):
         if intersect:
             inside = not inside
     return inside
+import json
 
-def is_point_in_zone(samples, x, y):
+def load_hitting_zone_samples(file_path="hitting_zone_calibration.json"):
+    """
+    Load the hitting zone samples from a JSON file.
+    
+    :param file_path: Path to the JSON file containing the samples.
+    :return: List of samples if successful, None otherwise.
+    """
+    try:
+        with open(file_path, "r") as file:
+            data = json.load(file)
+            return data.get("samples", None)
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        print(f"Error loading hitting zone samples: {e}")
+        return None
+
+def is_point_in_zone(x, y):
+    samples=load_hitting_zone_samples()
     """
     samples: list of four [x, y] corner coordinates, in any order
     x, y:   the point to test
@@ -39,14 +56,3 @@ def is_point_in_zone(samples, x, y):
     poly = _order_polygon(samples)
     return _point_in_poly(x, y, poly)
 
-# --- Example usage ---
-if __name__ == "__main__":
-    samples = [
-        [-94.53612068965518, 448.22758620689655],
-        [-14.464406779661017, 440.6305084745763],
-        [-125.22717391304347, 565.1565217391304],
-        [-12.445416666666667, 541.6083333333333]
-    ]
-    test_point = (-50, 500)
-    inside = is_point_in_zone(samples, *test_point)
-    print(f"Point {test_point} is inside zone? {inside}")

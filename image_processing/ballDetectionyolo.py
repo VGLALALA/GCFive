@@ -75,7 +75,7 @@ def get_detection_bounding_boxes(image, conf=0.25, imgsz=640):
     return [x_min, y_min, x_max, y_max]
 
 
-from GolfBall import GolfBall
+from spin.GolfBall import GolfBall
 def get_detected_balls_info(image, conf=0.25, imgsz=640):
     """
     Run YOLO on an image and return a list of GolfBall objects.
