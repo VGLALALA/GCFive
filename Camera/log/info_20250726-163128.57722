@@ -1,0 +1,4 @@
+Log file created at: 2025/07/26 16:31:28
+Running on machine: MakkapakkaDuo
+Log line format: [IWEF]mmdd hh:mm:ss.uuuuuu threadid file:line] msg
+I0726 16:31:28.962445 57722 DevbaseUsb2.cpp:2546] ResetUSB success

@@ -15,8 +15,9 @@ from spin.spinAxis import calculate_spin_axis
 from spin.GetLaunchAngle import calculate_launch_angle
 from image_processing.ballSpeedCalculation import calculate_ball_speed
 from trajectory_simulation.flightDataCalculation import get_trajectory_metrics
+from spin.Vector2RPM import calculate_spin_components
 RECALIBRATE_HITTING_ZONE = False
-FPS = 1300
+FPS = 795
 DELTA_T = 1/FPS
 
 def main():
@@ -146,8 +147,8 @@ def main():
     print("Camera and buffer released.")
 
     best_rot_x, best_rot_y, best_rot_z = get_fine_ball_rotation(initial_frame, best_match_frame)
-    side_spin_rpm = (best_rot_x / (DELTA_T * delta_idx)) * (60 / 360)
-    back_spin_rpm = (best_rot_y / (DELTA_T * delta_idx)) * (60 / 360)
+    delta_ms = (DELTA_T * delta_idx * 1000)
+    side_spin_rpm, back_spin_rpm, total_spin_rpm = calculate_spin_components([best_rot_x,best_rot_y,best_rot_z],delta_ms)
     spin_axis = calculate_spin_axis(back_spin_rpm, side_spin_rpm)
     launch_angle = calculate_launch_angle(initial_frame, best_match_frame)
     ball_speed_mph = calculate_ball_speed(initial_frame, best_match_frame, DELTA_T * delta_idx, return_mph=True)
@@ -155,7 +156,7 @@ def main():
         "Speed": ball_speed_mph,
         "VLA": launch_angle,
         "HLA": 0,
-        "TotalSpin":  math.hypot(back_spin_rpm, side_spin_rpm),
+        "TotalSpin":  total_spin_rpm,
         "SpinAxis": spin_axis
     }
     trajectory_data, postitions = get_trajectory_metrics(data)
@@ -164,7 +165,7 @@ def main():
     apex = trajectory_data["apex"]
     hangtime = trajectory_data["time_of_flight"]
     desc_angle = trajectory_data["descending_angle"]
-    print(f"Delta t: {(DELTA_T * delta_idx * 1000):.2f}")
+    print(f"Delta t: {delta_ms:.2f}")
     print(f"Ball Speed: {ball_speed_mph:.2f} mph")
     print(f"Vertical Launch Angle: {launch_angle:.2f} degrees")
     print(f"Total Spin: {data['TotalSpin']:.2f} rpm")
