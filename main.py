@@ -157,6 +157,7 @@ def main():
     apex = trajectory_data["apex"]
     hangtime = trajectory_data["time_of_flight"]
     desc_angle = trajectory_data["descending_angle"]
+    print(f"Delta t: {(DELTA_T * delta_idx * 1000):.2f} ms")
     print(f"Ball Speed: {ball_speed_mph:.2f} mph")
     print(f"Vertical Launch Angle: {launch_angle:.2f} degrees")
     print(f"Total Spin: {data['TotalSpin']:.2f} rpm")
