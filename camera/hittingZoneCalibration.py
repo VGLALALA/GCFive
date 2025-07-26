@@ -1,9 +1,8 @@
 import cv2
 import numpy as np
 import json
-from camera.MVSCamera import MVSCamera
 from image_processing.get2Dcoord import get_ball_xz
-from image_processing.CamBalldistancePred import ROI_W, ROI_H, ROI_X, ROI_Y, EXPOSURE_US
+from camera import cv_grab_callback
 import math
 import matplotlib.pyplot as plt
 
@@ -50,7 +49,9 @@ def plot_ordered_quadrilateral(points, filename='calibrated_hitting_zone.png'):
 # captured_points = [[-96.8, 464.2], [-10.3, 448.2], [-115.8, 553.1], [-1.3, 541.6]]
 # plot_ordered_quadrilateral(captured_points)
 
-def calibrate_hitting_zone_stream(num_points=4, calibration_file='hitting_zone_calibration.json'):
+def calibrate_hitting_zone_stream(num_points=4,
+                                 calibration_file='hitting_zone_calibration.json',
+                                 cam=None):
     """
     Opens a live camera stream, lets you place the ball at each of `num_points`
     calibration positions. Press Enter to capture each point, 'q' to quit early.
@@ -58,8 +59,16 @@ def calibrate_hitting_zone_stream(num_points=4, calibration_file='hitting_zone_c
     Returns:
       samples: list of (x_mm, z_mm) coordinates
     """
-    cam = MVSCamera(ROI_W, ROI_H, ROI_X, ROI_Y, EXPOSURE_US, 1000, 0.25)
-    cam.open()
+    own_cam = False
+    if cam is None:
+        cam = cv_grab_callback.setup_camera_and_buffer()
+        own_cam = True
+        if cam is None:
+            print("Failed to open camera for hitting zone calibration.")
+            return None
+    else:
+        # assume the provided camera is already opened with correct settings
+        pass
     cv2.namedWindow('Calibration Stream', cv2.WINDOW_NORMAL)
 
     samples = []
@@ -94,7 +103,11 @@ def calibrate_hitting_zone_stream(num_points=4, calibration_file='hitting_zone_c
             print("Calibration aborted by user.")
             break
 
-    cam.close()
+    if own_cam:
+        cv_grab_callback.release_camera_and_buffer(cam)
+    else:
+        # leave camera open for caller
+        pass
     cv2.destroyAllWindows()
 
     if len(samples) < 2:

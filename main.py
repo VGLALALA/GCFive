@@ -5,6 +5,7 @@ import time
 import camera.cv_grab_callback as cv_grab_callback  # Import the monitoring module
 import queue
 import threading
+from camera.hittingZoneCalibration import calibrate_hitting_zone_stream
 from image_processing.ballDetectionyolo import detect_golfballs  # Import YOLO detection function
 from image_processing.ballinZoneCheck import is_point_in_zone  # Import the zone check function
 
@@ -16,6 +17,9 @@ def main():
         return
 
     monoCamera = cam.mono
+
+    # Perform hitting zone calibration using the same camera settings
+    calibrate_hitting_zone_stream(cam=cam)
 
     # The global buffer is allocated in setup_camera_and_buffer now
     # pFrameBuffer = cv_grab_callback.pFrameBuffer_global 
