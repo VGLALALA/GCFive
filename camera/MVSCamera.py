@@ -1,6 +1,7 @@
 import camera.mvsdk as mvsdk
 import numpy as np
 import ctypes
+import platform
 
 class MVSCamera:
     def __init__(self, roi_w, roi_h, roi_x, roi_y, exposure_us, desired_analog_gain, desired_gamma):
@@ -54,6 +55,8 @@ class MVSCamera:
             self.buf = mvsdk.CameraAlignMalloc(head.uBytes, 16)
             self.buf_sz = head.uBytes
         mvsdk.CameraImageProcess(self.hCamera, pRaw, self.buf, head)
+        if platform.system() == "Windows":
+            mvsdk.CameraFlipFrameBuffer(self.buf, head, 1)
         mvsdk.CameraReleaseImageBuffer(self.hCamera, pRaw)
         frame_data = (ctypes.c_ubyte * head.uBytes).from_address(self.buf)
         if self.mono:
