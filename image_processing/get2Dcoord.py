@@ -1,7 +1,9 @@
 import math
 
-from image_processing.CamBalldistancePred import (load_calibration,
-                                                  predict_distance_from_frame)
+from image_processing.CamBalldistancePred import (
+    load_calibration,
+    predict_distance_from_frame,
+)
 
 
 def get_ball_xz(frame, dets):

@@ -7,8 +7,9 @@ import cv2
 import numpy as np
 
 from camera.MVSCamera import MVSCamera
-from image_processing.ballDetectionyolo import \
-    detect_golfballs  # Import YOLO detection function
+from image_processing.ballDetectionyolo import (  # Import YOLO detection function
+    detect_golfballs,
+)
 
 BALL_DIAM_MM = 42.67
 GOLF_BALL_RADIUS_MM = 21.335

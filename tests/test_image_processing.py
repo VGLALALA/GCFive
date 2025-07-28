@@ -8,8 +8,9 @@ from image_processing.ballSpeedCalculation import calculate_ball_speed
 from image_processing.Convert_Canny import convert_to_canny
 from image_processing.Convert_GrayScale import convert_to_grayscale
 from image_processing.ImageCompressor import compress_image
-from image_processing.launchAngleCalculation import \
-    calculate_launch_angle as calc_launch
+from image_processing.launchAngleCalculation import (
+    calculate_launch_angle as calc_launch,
+)
 from image_processing.movementDetection import has_ball_moved
 from image_processing.RemoveReflection import remove_reflections
 
