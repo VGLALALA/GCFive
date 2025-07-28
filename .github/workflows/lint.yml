@@ -29,10 +29,17 @@ jobs:
       - name: Run pre-commit
         run: pre-commit run --all-files --show-diff-on-failure || true
 
-      - name: Auto-commit pre-commit fixes (if any)
+      - name: Auto-commit pre-commit fixes (Ubuntu only)
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add .
-          git diff --cached --quiet || git commit -m "chore: auto-fix via pre-commit"
-          git push
+          git diff --cached --quiet && echo "No changes to commit" && exit 0
+
+          # Find the current branch name
+          BRANCH_NAME="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
+
+          git commit -m "chore: auto-fix via pre-commit"
+          git push origin HEAD:$BRANCH_NAME
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
