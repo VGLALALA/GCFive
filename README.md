@@ -72,3 +72,16 @@ sdk/                   HuaTeng Vision SDK binaries
 ## License
 
 This project is released under the MIT License. See `LICENSE` for the full text.
+
+## Development
+
+The repository uses `pre-commit` to enforce code style. Black and isort
+are run automatically before each commit. Set up the hooks with:
+
+```bash
+pip install pre-commit
+pre-commit install
+```
+
+You can manually run the checks across the whole project using
+`pre-commit run --all-files`.
