@@ -2,9 +2,11 @@ name: Update Changelog
 
 on:
   pull_request:
-  push:
-    branches: [main]
-    
+
+permissions:
+  contents: read
+  pull-requests: write  # Required to comment on PRs
+
 jobs:
   update-changelog:
     runs-on: ubuntu-latest
@@ -20,10 +22,29 @@ jobs:
 
       - name: Install Codex CLI
         run: npm install -g @openai/codex
-        shell: bash  # Ensures consistency across platforms
+        shell: bash
 
-      - name: Update changelog via Codex
-        run: codex exec --full-auto "update CHANGELOG for next release"
-        shell: bash  # Ensures command is parsed properly
+      - name: Generate Changelog (without writing to file)
+        id: changelog
+        run: |
+          CHANGELOG_OUTPUT=$(codex exec --full-auto "summarize the code changes for this pull request in changelog format, but don't modify any files")
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG_OUTPUT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_KEY }}
+        shell: bash
+
+      - name: Post changelog comment to PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const output = `${{ steps.changelog.outputs.changelog }}`;
+            const body = `### 📝 Proposed Changelog\n\n${output}`;
+            github.rest.issues.createComment({
+              issue_number: context.payload.pull_request.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
