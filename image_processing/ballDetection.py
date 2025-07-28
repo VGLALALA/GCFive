@@ -2,20 +2,29 @@ import cv2
 import numpy as np
 import json
 import os
-from ultralytics import YOLO   # pip install ultralytics
-# from .Convert_Canny import convert_to_canny   # keep if you still need it
+try:
+    from ultralytics import YOLO   # pip install ultralytics
+    _HAS_ULTRALYTICS = True
+except ImportError:
+    YOLO = None
+    _HAS_ULTRALYTICS = False
 
 MODEL_PATH  = "data/model/golfballv4.pt"
 CLASS_ID    = 0   # change if your golf ball class id != 0
 
-# ---------- YOLO STUFF ----------
-model = YOLO(MODEL_PATH)
+# Initialize YOLO model if available
+if _HAS_ULTRALYTICS:
+    model = YOLO(MODEL_PATH)
+else:
+    model = None
 
 def detect_golfballs(image, conf=0.25, imgsz=640, display=True):
     """
     Run YOLO on an image (path or ndarray) and return a list of (x_center, y_center, r_pixels).
     r is approximated from the bbox as the average of half-width & half-height.
     """
+    if model is None:
+        raise ImportError("ultralytics YOLO model not available. Install ultralytics to use detect_golfballs.")
     results = model.predict(source=image, conf=conf, imgsz=imgsz, verbose=False)
     if not results:
         return []

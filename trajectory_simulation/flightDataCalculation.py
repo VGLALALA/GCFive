@@ -1,6 +1,5 @@
 # Cell 1: Imports and Setup
 import numpy as np
-import matplotlib.pyplot as plt
 import os
 import cv2
 
@@ -72,7 +71,8 @@ def get_trajectory_metrics(data):
         Dictionary containing carry distance, total distance, apex height, time of flight, and descending angle.
     """
     positions, flight_time = simulate_shot(data)
-    before_rolling_index = next(i for i, pos in enumerate(positions) if pos[1] <= 0.0)
+    # Find first ground contact after launch (skip initial position at time zero)
+    before_rolling_index = next(i for i, pos in enumerate(positions) if pos[1] <= 0.0 and i > 0)
     carry_distance = np.linalg.norm(positions[before_rolling_index][[0, 2]]) * 1.09361
     total_distance = np.linalg.norm(positions[-1][[0, 2]]) * 1.09361
     apex = positions[:, 1].max() * 3.28084
@@ -113,4 +113,3 @@ if __name__ == "__main__":
     print(f"Time of Flight: {flight_time:.2f} s")
     print(f"Apex Height: {apex:.2f} ft")
     print(f"Descending Angle: {descending_angle:.2f} degrees")
-

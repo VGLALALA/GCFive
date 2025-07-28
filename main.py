@@ -22,7 +22,7 @@ from trajectory_simulation.flightDataCalculation import get_trajectory_metrics
 from spin.Vector2RPM import calculate_spin_components
 
 RECALIBRATE_HITTING_ZONE = False
-FPS = 795
+FPS = 1305
 DELTA_T = 1 / FPS
 
 
