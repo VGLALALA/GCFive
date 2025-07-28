@@ -36,10 +36,9 @@ jobs:
           git add .
           git diff --cached --quiet && echo "No changes to commit" && exit 0
 
-          # Find the current branch name
+          # Extract branch name
           BRANCH_NAME="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
 
           git commit -m "chore: auto-fix via pre-commit"
-          git push origin HEAD:$BRANCH_NAME
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          git push origin HEAD:$BRANCH_NAME --force
+
