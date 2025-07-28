@@ -64,7 +64,7 @@ class RangeSim:
 
     @property
     def distance_yards(self):
-        return (self.ball.position[[0,2]] ** 2).sum() ** 0.5 * 1.09361
+        return (self.ball.position[[0, 2]] ** 2).sum() ** 0.5 * 1.09361
 
     @property
     def apex_feet(self):

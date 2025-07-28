@@ -1,18 +1,19 @@
-import time
 import math
-from typing import List, Tuple
-from .RotationCandidate import RotationCandidate
 import time
-import numpy as np
 from typing import List, Tuple
+
+import numpy as np
+
 from .CompareRotationImage import compare_rotation_image
+from .RotationCandidate import RotationCandidate
+
 
 def compare_candidate_angle_images(
     target_image: np.ndarray,
     candidate_elements_mat: np.ndarray,
     candidates: List[RotationCandidate],
-    candidate_size: Tuple[int,int,int],
-    serialize_debug: bool = False
+    candidate_size: Tuple[int, int, int],
+    serialize_debug: bool = False,
 ) -> Tuple[int, List[str]]:
     """
     Port of BallImageProc::CompareCandidateAngleImages to Python.
@@ -82,7 +83,9 @@ def compare_candidate_angle_images(
     best_score = -np.inf
     best_index = -1
     for c in candidates:
-        low_penalty = ((max_pixels_examined - c.pixels_examined) / kWeight) ** kPower / kScale
+        low_penalty = (
+            (max_pixels_examined - c.pixels_examined) / kWeight
+        ) ** kPower / kScale
         final_score = (c.score * 10.0) - low_penalty
         if final_score > best_score:
             best_score = final_score

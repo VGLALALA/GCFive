@@ -1,5 +1,6 @@
 import math
 
+
 def _order_polygon(points):
     """
     Given a list of (x, y) points, return them sorted around their centroid
@@ -8,6 +9,7 @@ def _order_polygon(points):
     cx = sum(x for x, y in points) / len(points)
     cy = sum(y for x, y in points) / len(points)
     return sorted(points, key=lambda p: math.atan2(p[1] - cy, p[0] - cx))
+
 
 def _point_in_poly(x, y, poly):
     """
@@ -21,17 +23,21 @@ def _point_in_poly(x, y, poly):
         xi, yi = poly[i]
         xj, yj = poly[i - 1]
         # Check if edge crosses horizontal ray at y
-        intersect = ((yi > y) != (yj > y)) and \
-                    (x < (xj - xi) * (y - yi) / (yj - yi) + xi)
+        intersect = ((yi > y) != (yj > y)) and (
+            x < (xj - xi) * (y - yi) / (yj - yi) + xi
+        )
         if intersect:
             inside = not inside
     return inside
+
+
 import json
+
 
 def load_hitting_zone_samples(file_path="hitting_zone_calibration.json"):
     """
     Load the hitting zone samples from a JSON file.
-    
+
     :param file_path: Path to the JSON file containing the samples.
     :return: List of samples if successful, None otherwise.
     """
@@ -43,8 +49,9 @@ def load_hitting_zone_samples(file_path="hitting_zone_calibration.json"):
         print(f"Error loading hitting zone samples: {e}")
         return None
 
+
 def is_point_in_zone(x, y):
-    samples=load_hitting_zone_samples()
+    samples = load_hitting_zone_samples()
     print(samples)
     """
     samples: list of four [x, y] corner coordinates, in any order
@@ -56,4 +63,3 @@ def is_point_in_zone(x, y):
     # Order them into a proper polygon
     poly = _order_polygon(samples)
     return _point_in_poly(x, y, poly)
-

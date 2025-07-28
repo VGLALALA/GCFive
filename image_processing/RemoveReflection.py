@@ -1,12 +1,15 @@
 import cv2
 import numpy as np
 
-def remove_reflections(original_image: np.ndarray,
-                       filtered_image: np.ndarray,
-                       mask: np.ndarray = None,
-                       brightness_percentage: int = 99,
-                       k_reflection_min_val: int = 200,
-                       k_pixel_ignore_value: int = 128) -> np.ndarray:
+
+def remove_reflections(
+    original_image: np.ndarray,
+    filtered_image: np.ndarray,
+    mask: np.ndarray = None,
+    brightness_percentage: int = 99,
+    k_reflection_min_val: int = 200,
+    k_pixel_ignore_value: int = 128,
+) -> np.ndarray:
     """
     Remove bright reflections from original_image by marking them in filtered_image.
 
@@ -30,22 +33,20 @@ def remove_reflections(original_image: np.ndarray,
     highest = int(vals.max())
     brightness_cutoff = float(np.percentile(vals, brightness_percentage))
     # (In C++ you actually override this with a constant, so we’ll do the same:)
-    
+
     # 2. Threshold to find bright (reflection) pixels
     #    inRange will produce a binary image where pixels >= k_reflection_min_val are 255
-    thresh = cv2.inRange(original_image,
-                         k_reflection_min_val,  # lower 
-                         255)                   # upper
-    
+    thresh = cv2.inRange(original_image, k_reflection_min_val, 255)  # lower  # upper
+
     # 3. Morphological close then dilation to expand reflection regions
     close_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
     morph = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, close_kernel, iterations=1)
-    
+
     dilate_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
     morph = cv2.morphologyEx(morph, cv2.MORPH_DILATE, dilate_kernel, iterations=1)
-    
+
     # 4. Mark reflections in filtered_image as “ignore”
     #    assuming filtered_image is uint8; adjust if you have a different type
     filtered_image[morph == 255] = k_pixel_ignore_value
-    
+
     return filtered_image

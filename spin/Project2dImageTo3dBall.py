@@ -1,13 +1,18 @@
+import math
 from typing import Tuple
+
 import numpy as np
+
 from .GolfBall import GolfBall
 from .ProjectOp import ProjectionOp
-import math
+
 kPixelIgnoreValue = 128
+
+
 def project_2d_image_to_3d_ball(
     image_gray: np.ndarray,
     ball: GolfBall,
-    rotation_angles_degrees: Tuple[int, int, int]
+    rotation_angles_degrees: Tuple[int, int, int],
 ) -> np.ndarray:
     """
     Projects a 2D grayscale image of a golf ball onto a virtual 3D hemisphere,

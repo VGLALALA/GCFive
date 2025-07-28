@@ -1,9 +1,11 @@
 import time
-import numpy as np
-import cv2
 from typing import List, Tuple
-from RotationCandidate import RotationCandidate
+
+import cv2
+import numpy as np
 from CompareRotationImage import compare_rotation_image
+from RotationCandidate import RotationCandidate
+
 
 def ImgComparsionOp(
     target_image: np.ndarray,
@@ -18,7 +20,7 @@ def ImgComparsionOp(
     """
     xSize, ySize, zSize = candidate_elements_mat.shape
     num_candidates = xSize * ySize * zSize
-    comparison_data: List[str] = [''] * num_candidates
+    comparison_data: List[str] = [""] * num_candidates
 
     # 1) compute per-candidate raw scores & CSV lines
     for x in range(xSize):
@@ -50,14 +52,16 @@ def ImgComparsionOp(
     kPenaltyScale = 1000.0
 
     best_score = -np.inf
-    best_idx   = -1
+    best_idx = -1
 
     for c in candidates:
-        penalty = (((max_pixels_examined - c.pixels_examined) / kDiffFactor) ** kPenaltyPower) / kPenaltyScale
+        penalty = (
+            ((max_pixels_examined - c.pixels_examined) / kDiffFactor) ** kPenaltyPower
+        ) / kPenaltyScale
         final_score = (c.score * 10.0) - penalty
         if final_score > best_score:
             best_score = final_score
-            best_idx   = c.index
+            best_idx = c.index
 
     return best_idx, comparison_data
 
@@ -65,12 +69,14 @@ def ImgComparsionOp(
 # Example usage
 if __name__ == "__main__":
     X, Y, Z = 4, 4, 4
-    H, W    = 100, 100
-    target  = np.random.randint(0,256,(H,W),dtype=np.uint8)
-    candidates = [RotationCandidate(i, np.random.randint(0,256,(H,W),dtype=np.uint8),0,0,0)
-                  for i in range(X*Y*Z)]
-    indices = np.arange(X*Y*Z, dtype=np.int32).reshape((X,Y,Z))
+    H, W = 100, 100
+    target = np.random.randint(0, 256, (H, W), dtype=np.uint8)
+    candidates = [
+        RotationCandidate(i, np.random.randint(0, 256, (H, W), dtype=np.uint8), 0, 0, 0)
+        for i in range(X * Y * Z)
+    ]
+    indices = np.arange(X * Y * Z, dtype=np.int32).reshape((X, Y, Z))
     best, csv = ImgComparsionOp(target, indices, candidates)
     print("Best candidate:", best)
-    with open("results.tsv","w") as f:
+    with open("results.tsv", "w") as f:
         f.writelines(csv)

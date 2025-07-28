@@ -1,7 +1,13 @@
 import math
-from image_processing.ballDetection import detect_golfballs
+
 import cv2
-def calculate_ball_speed(frame1, frame2, delta_t, ball_diameter_mm=42.67, return_mph=True):
+
+from image_processing.ballDetection import detect_golfballs
+
+
+def calculate_ball_speed(
+    frame1, frame2, delta_t, ball_diameter_mm=42.67, return_mph=True
+):
     """
     Estimate the ball’s speed based on two image frames and the time between them.
 

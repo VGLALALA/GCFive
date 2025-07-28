@@ -1,5 +1,6 @@
-import numpy as np
 import cv2
+import numpy as np
+
 
 def compress_image(image: np.ndarray, scale: float) -> np.ndarray:
     """

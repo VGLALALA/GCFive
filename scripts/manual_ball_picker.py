@@ -9,6 +9,7 @@ points = []
 cv2.namedWindow("Select Ball Center and Edge", cv2.WINDOW_NORMAL)
 cv2.resizeWindow("Select Ball Center and Edge", image.shape[1], image.shape[0])
 
+
 def click_event(event, x, y, flags, param):
     global points, clone
     if event == cv2.EVENT_LBUTTONDOWN:
@@ -28,6 +29,7 @@ def click_event(event, x, y, flags, param):
             # Draw the computed circle for feedback
             cv2.circle(clone, center, radius, (255, 255, 255), 2)
             cv2.imshow("Select Ball Center and Edge", clone)
+
 
 cv2.imshow("Select Ball Center and Edge", clone)
 cv2.setMouseCallback("Select Ball Center and Edge", click_event)

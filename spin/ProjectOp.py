@@ -1,7 +1,9 @@
-import cv2
-import numpy as np
 import math
 from typing import Tuple
+
+import cv2
+import numpy as np
+
 from .GolfBall import GolfBall
 
 
@@ -12,7 +14,7 @@ class ProjectionOp:
         projected_img: np.ndarray,
         x_rad: float,
         y_rad: float,
-        z_rad: float
+        z_rad: float,
     ):
         self.currentBall = ball
         self.projectedImg = projected_img
@@ -43,7 +45,7 @@ class ProjectionOp:
         # outside circle -> ignore
         if abs(x_c) > r or abs(y_c) > r:
             return x_c, y_c, 0.0
-        diff = r*r - (x_c**2 + y_c**2)
+        diff = r * r - (x_c**2 + y_c**2)
         if diff < 0:
             return x_c, y_c, 0.0
         z = math.sqrt(diff)
@@ -76,11 +78,8 @@ class ProjectionOp:
         newY = imgYc + self.currentBall.y
         _, _, z2 = self.get_ball_z(newX, newY)
         # valid rotated point
-        if (0 <= newX < self.cols and 0 <= newY < self.rows and z2 > 0.0):
+        if 0 <= newX < self.cols and 0 <= newY < self.rows and z2 > 0.0:
             rx = int(newX + 0.5) - 1
             ry = int(newY + 0.5) - 1
             self.projectedImg[ry, rx, 0] = int(z2)
             self.projectedImg[ry, rx, 1] = 128 if prerotated_invalid else pixelValue
-
-
-

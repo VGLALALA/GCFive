@@ -1,25 +1,25 @@
 # coding=utf-8
-import cv2
-import numpy as np
-import time
-import camera.cv_grab_callback as cv_grab_callback  # Import the monitoring module
+import math
 import queue
 import threading
-import math
+import time
+
+import cv2
+import numpy as np
+
+import camera.cv_grab_callback as cv_grab_callback  # Import the monitoring module
 from camera.hittingZoneCalibration import calibrate_hitting_zone_stream
-from image_processing.ballDetectionyolo import (
-    detect_golfballs,
-)  # Import YOLO detection function
-from image_processing.ballinZoneCheck import (
-    is_point_in_zone,
-)  # Import the zone check function
+from image_processing.ballDetectionyolo import \
+    detect_golfballs  # Import YOLO detection function
+from image_processing.ballinZoneCheck import \
+    is_point_in_zone  # Import the zone check function
+from image_processing.ballSpeedCalculation import calculate_ball_speed
 from image_processing.get2Dcoord import get_ball_xz
 from spin.GetBallRotation import get_fine_ball_rotation
-from spin.spinAxis import calculate_spin_axis
 from spin.GetLaunchAngle import calculate_launch_angle
-from image_processing.ballSpeedCalculation import calculate_ball_speed
-from trajectory_simulation.flightDataCalculation import get_trajectory_metrics
+from spin.spinAxis import calculate_spin_axis
 from spin.Vector2RPM import calculate_spin_components
+from trajectory_simulation.flightDataCalculation import get_trajectory_metrics
 
 RECALIBRATE_HITTING_ZONE = False
 FPS = 1305

@@ -1,6 +1,10 @@
 import math
-from image_processing.ballDetection import detect_golfballs
+
 import cv2
+
+from image_processing.ballDetection import detect_golfballs
+
+
 def calculate_launch_angle(frame1, frame2):
     """
     Given two image frames and the time between them, return the

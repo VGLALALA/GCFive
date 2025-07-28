@@ -1,6 +1,8 @@
 import numpy as np
-from trajectory_simulation.vector import vec3, length
-from trajectory_simulation.ball import project, angle_between, limit_length, rotation_matrix
+
+from trajectory_simulation.ball import (angle_between, limit_length, project,
+                                        rotation_matrix)
+from trajectory_simulation.vector import length, vec3
 
 
 def test_project():

@@ -1,7 +1,10 @@
 from dataclasses import dataclass, field
 from typing import Tuple
+
 import numpy as np
-from .vector import vec3, length, normalized, cross, dot
+
+from .vector import cross, dot, length, normalized, vec3
+
 
 @dataclass
 class Ball:
@@ -36,9 +39,9 @@ class Ball:
     position_list: list = field(default_factory=list)  # list to store position history
     total_position_list: list = field(default_factory=list)
 
-    def __post_init__(self):    
-        self.A = np.pi * self.radius ** 2
-        self.I = 0.4 * self.mass * self.radius ** 2
+    def __post_init__(self):
+        self.A = np.pi * self.radius**2
+        self.I = 0.4 * self.mass * self.radius**2
 
     def reset(self):
         self.position[:] = vec3(0.0, 0.1, 0.0)
@@ -112,13 +115,13 @@ class Ball:
             if Re < 50000.0:
                 Cd = 0.6
             elif Re < 87500.0:
-                Cd = self.cd_mid_a * Re ** 2 + self.cd_mid_b * Re + self.cd_mid_c
+                Cd = self.cd_mid_a * Re**2 + self.cd_mid_b * Re + self.cd_mid_c
             else:
-                Cd = self.cd_high_a * Re ** 2 + self.cd_high_b * Re + self.cd_high_c
+                Cd = self.cd_high_a * Re**2 + self.cd_high_b * Re + self.cd_high_c
             Cd *= self.drag_scale
             S *= self.lift_scale
             F_m = cross(self.omega, self.velocity) * S
-            T_d = -8.0 * np.pi * self.mu * self.radius ** 3 * self.omega
+            T_d = -8.0 * np.pi * self.mu * self.radius**3 * self.omega
             F_d = -self.velocity * speed * Cd * self.rho * self.A / 2.0
 
         F = F_g + F_d + F_m + F_f + F_gd
@@ -151,12 +154,15 @@ class Ball:
         speed = length(self.velocity)
         theta_1 = angle_between(self.velocity, normal)
         theta_c = 15.4 * speed * theta_1 / 18.6 / 44.4
-        v2_orth = 5.0/7.0*speed*np.sin(theta_1-theta_c) - 2.0*self.radius*length(omg_norm)/7.0
+        v2_orth = (
+            5.0 / 7.0 * speed * np.sin(theta_1 - theta_c)
+            - 2.0 * self.radius * length(omg_norm) / 7.0
+        )
         if speed_orth < 0.01:
             vel_orth = vec3()
         else:
             vel_orth = limit_length(vel_orth, v2_orth)
-        w2h = v2_orth/self.radius
+        w2h = v2_orth / self.radius
         if length(omg_orth) < 0.1:
             omg_orth = vec3()
         else:
@@ -164,20 +170,23 @@ class Ball:
         if speed_norm < 20.0:
             e = 0.12
         else:
-            e = 0.510 - 0.0375*speed_norm + 0.000903*speed_norm*speed_norm
+            e = 0.510 - 0.0375 * speed_norm + 0.000903 * speed_norm * speed_norm
         vel_norm = vel_norm * -e
         self.omega = omg_norm + omg_orth
         return vel_norm + vel_orth
 
+
 def project(v, n):
     n_norm = normalized(n)
     return n_norm * dot(v, n_norm)
+
 
 def angle_between(a, b):
     a_n = normalized(a)
     b_n = normalized(b)
     dot_val = np.clip(dot(a_n, b_n), -1.0, 1.0)
     return np.arccos(dot_val)
+
 
 def limit_length(v, l):
     cur = length(v)
@@ -187,16 +196,17 @@ def limit_length(v, l):
         return normalized(v) * l
     return v
 
+
 def rotation_matrix(axis, angle):
     axis = normalized(axis)
     x, y, z = axis
     c = np.cos(angle)
     s = np.sin(angle)
     C = 1 - c
-    return np.array([
-        [x*x*C + c,   x*y*C - z*s, x*z*C + y*s],
-        [y*x*C + z*s, y*y*C + c,   y*z*C - x*s],
-        [z*x*C - y*s, z*y*C + x*s, z*z*C + c  ],
-    ])
-
-
+    return np.array(
+        [
+            [x * x * C + c, x * y * C - z * s, x * z * C + y * s],
+            [y * x * C + z * s, y * y * C + c, y * z * C - x * s],
+            [z * x * C - y * s, z * y * C + x * s, z * z * C + c],
+        ]
+    )

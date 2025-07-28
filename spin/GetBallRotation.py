@@ -1,44 +1,45 @@
-import cv2
-from typing import Tuple
-import numpy as np
-from image_processing.IsolateCode import isolate_ball
-from image_processing.RemoveReflection import remove_reflections
-from image_processing.MaskAreaOutsideBall import mask_area_outside_ball
-from spin.GetRotatedImage import get_rotated_image
-from spin.GenerateRotationCandidate import generate_rotation_candidates
-from spin.CompareRotationImage import compare_rotation_image
-from image_processing.matchBallSize import match_ball_image_sizes
-from spin.RotationSearchSpace import RotationSearchSpace
-from spin.CompareCandidateAngleImage import compare_candidate_angle_images
-from image_processing.ApplyGaborFilter import apply_gabor_filter_image
-from image_processing.ImageCompressor import compress_image
-import time
-import os
 import multiprocessing
-from spin.GolfBall import GolfBall
+import os
+import time
+from typing import Tuple
+
+import cv2
+import numpy as np
+
+from image_processing.ApplyGaborFilter import apply_gabor_filter_image
 from image_processing.ballDetection import get_detected_balls_info
-COARSE_X_INC   = 6
+from image_processing.ImageCompressor import compress_image
+from image_processing.IsolateCode import isolate_ball
+from image_processing.MaskAreaOutsideBall import mask_area_outside_ball
+from image_processing.matchBallSize import match_ball_image_sizes
+from image_processing.RemoveReflection import remove_reflections
+from spin.CompareCandidateAngleImage import compare_candidate_angle_images
+from spin.CompareRotationImage import compare_rotation_image
+from spin.GenerateRotationCandidate import generate_rotation_candidates
+from spin.GetRotatedImage import get_rotated_image
+from spin.GolfBall import GolfBall
+from spin.RotationSearchSpace import RotationSearchSpace
+
+COARSE_X_INC = 6
 COARSE_X_START = -42
-COARSE_X_END   = 42
+COARSE_X_END = 42
 
-COARSE_Y_INC   = 5
+COARSE_Y_INC = 5
 COARSE_Y_START = -30
-COARSE_Y_END   = 30
+COARSE_Y_END = 30
 
-COARSE_Z_INC   = 6
+COARSE_Z_INC = 6
 COARSE_Z_START = -50
-COARSE_Z_END   = 60
-    
+COARSE_Z_END = 60
+
 
 def get_fine_ball_rotation(
-    ball_image1: np.ndarray,
-    ball_image2: np.ndarray,
-    compress_candidates: bool = False
+    ball_image1: np.ndarray, ball_image2: np.ndarray, compress_candidates: bool = False
 ) -> Tuple[float, float, float]:
     """
     Returns (spin_x, spin_y, spin_z) in degrees, corresponding to side-, back-, and axial-spin.
     """
-    
+
     # Detect and isolate the ball in each image
     ball1 = get_detected_balls_info(ball_image1)
     ball2 = get_detected_balls_info(ball_image2)
@@ -59,7 +60,7 @@ def get_fine_ball_rotation(
 
     ball2.x = ball2img.shape[1] // 2
     ball2.y = ball2img.shape[0] // 2
-    
+
     # Resize so both crops are the same size
     ball1img, ball2img = match_ball_image_sizes(ball1img, ball2img)
     cv2.imshow("Gaber Ref Removed 1", ball1img)
@@ -74,20 +75,22 @@ def get_fine_ball_rotation(
     cv2.waitKey(0)
     cv2.destroyAllWindows()
     edge1, calibrated_binary_threshold = apply_gabor_filter_image(ball1img)
-    edge2, calibrated_binary_threshold = apply_gabor_filter_image(ball2img, calibrated_binary_threshold)
+    edge2, calibrated_binary_threshold = apply_gabor_filter_image(
+        ball2img, calibrated_binary_threshold
+    )
     cv2.imshow("Gaber Ref Removed 1", edge1)
     cv2.imshow("Gaber Ref Removed 2", edge2)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
     # Remove specular reflections
-    #gaberRefRemoved1 = remove_reflections(ball1img, edge1)
-    #gaberRefRemoved2 = remove_reflections(ball2img, edge2)
+    # gaberRefRemoved1 = remove_reflections(ball1img, edge1)
+    # gaberRefRemoved2 = remove_reflections(ball2img, edge2)
     # cv2.imshow("Gaber Ref Removed 1", gaberRefRemoved1)
     # cv2.imshow("Gaber Ref Removed 2", gaberRefRemoved2)
     # cv2.waitKey(0)
     # cv2.destroyAllWindows()
     # Mask out everything outside the ball's circle
-    print(ball1,ball2)
+    print(ball1, ball2)
     FINAL_MASK_FACTOR = 0.92
     gaberRefRemoved1 = mask_area_outside_ball(edge1, ball1, FINAL_MASK_FACTOR)
     gaberRefRemoved2 = mask_area_outside_ball(edge2, ball2, FINAL_MASK_FACTOR)
@@ -104,7 +107,6 @@ def get_fine_ball_rotation(
     delta2d = np.round(delta_float).astype(int)
     delta = np.array([delta2d[0], delta2d[1], 0], dtype=int)
 
-
     adjustedimg1 = get_rotated_image(gaberRefRemoved1, ball1, tuple(delta))
     delta2d = np.round(-(offset2 - offset1 - delta_float)).astype(int)
     delta2d[1] = -delta2d[1]
@@ -119,12 +121,20 @@ def get_fine_ball_rotation(
 
     # Coarse-search for best 3D rotation that aligns edges1 → edges2
     coarse_space = RotationSearchSpace(
-        x_start=COARSE_X_START, x_end=COARSE_X_END, x_inc=COARSE_X_INC,
-        y_start=COARSE_Y_START, y_end=COARSE_Y_END, y_inc=COARSE_Y_INC,
-        z_start=COARSE_Z_START, z_end=COARSE_Z_END, z_inc=COARSE_Z_INC,
+        x_start=COARSE_X_START,
+        x_end=COARSE_X_END,
+        x_inc=COARSE_X_INC,
+        y_start=COARSE_Y_START,
+        y_end=COARSE_Y_END,
+        y_inc=COARSE_Y_INC,
+        z_start=COARSE_Z_START,
+        z_end=COARSE_Z_END,
+        z_inc=COARSE_Z_INC,
     )
     print(adjustedimg1.shape, adjustedimg2.shape)
-    output_mat, mat_size, candidates = generate_rotation_candidates(adjustedimg1, coarse_space, ball1)
+    output_mat, mat_size, candidates = generate_rotation_candidates(
+        adjustedimg1, coarse_space, ball1
+    )
 
     comparison_csv_data = []
     best_candidate_index, comparison_csv_data = compare_candidate_angle_images(
@@ -157,10 +167,12 @@ def get_fine_ball_rotation(
         y_inc=COARSE_Y_INC // 2,
         z_start=c.z_rotation_degrees - COARSE_Z_INC // 2,
         z_end=c.z_rotation_degrees + COARSE_Z_INC // 2,
-        z_inc=1
+        z_inc=1,
     )
 
-    foutput_mat, fmat_size, fcandidates  = generate_rotation_candidates(adjustedimg1, final_search_space, ball1)
+    foutput_mat, fmat_size, fcandidates = generate_rotation_candidates(
+        adjustedimg1, final_search_space, ball1
+    )
 
     best_candidate_index, comparison_csv_data = compare_candidate_angle_images(
         adjustedimg2, foutput_mat, fcandidates, fmat_size
@@ -181,11 +193,9 @@ def get_fine_ball_rotation(
         best_rot_z = final_c.z_rotation_degrees
     else:
         rotation_result = np.array([0, 0, 0])
-    
+
     result_bball2d_image = get_rotated_image(
-        ball1img,
-        ball1,
-        (best_rot_x,best_rot_y,best_rot_z)
+        ball1img, ball1, (best_rot_x, best_rot_y, best_rot_z)
     )
     cv2.imshow("Actual", ball2img)
     cv2.imshow("Final rotated-by-best-angle originalBall1", result_bball2d_image)
@@ -194,22 +204,23 @@ def get_fine_ball_rotation(
     rotation_result = np.array([best_rot_x, best_rot_y, best_rot_z])
     return rotation_result
 
-if __name__ == '__main__':
-    
+
+if __name__ == "__main__":
+
     multiprocessing.freeze_support()
-    
 
     test_img_path1 = "data/Images/frame0.png"
     test_img_path2 = "data/Images/frame15.png"
 
-    delta_t = 10/1305
+    delta_t = 10 / 1305
 
     test_img1 = cv2.imread(test_img_path1, cv2.IMREAD_GRAYSCALE)
     test_img2 = cv2.imread(test_img_path2, cv2.IMREAD_GRAYSCALE)
     if test_img1 is not None and test_img2 is not None:
-        best_rot_x, best_rot_y, best_rot_z = get_fine_ball_rotation(test_img1, test_img2, compress_candidates=True)
+        best_rot_x, best_rot_y, best_rot_z = get_fine_ball_rotation(
+            test_img1, test_img2, compress_candidates=True
+        )
         print(best_rot_x, best_rot_y, best_rot_z)
-
 
         side_spin_rpm = (best_rot_x / delta_t) * (60 / 360)
         back_spin_rpm = (best_rot_y / delta_t) * (60 / 360)
@@ -217,4 +228,6 @@ if __name__ == '__main__':
         print(f"Side Spin: {side_spin_rpm} rpm")
         print(f"Back Spin: {back_spin_rpm} rpm")
     else:
-        print(f"Failed to load test images from: {test_img_path1} and/or {test_img_path2}. Please check the paths and ensure the images exist.")
+        print(
+            f"Failed to load test images from: {test_img_path1} and/or {test_img_path2}. Please check the paths and ensure the images exist."
+        )
