@@ -135,7 +135,8 @@ def process_frames(cam,
                 diff = cv2.absdiff(original_cropped_roi, crop)
                 md = np.mean(diff)
                 frame_count += 1
-                fps = frame_count / (time.time() - start_time)
+                elapsed = time.time() - start_time
+                fps = frame_count / elapsed if elapsed > 0 else 0.0
                 print(f"Comparison FPS: {fps:.1f}, Mean Difference: {md:.2f}")
 
                 if md > movement_threshold and not is_recording:
