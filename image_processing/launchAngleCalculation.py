@@ -1,11 +1,12 @@
-
 import math
 from typing import Tuple
 
 BALL_DIAMETER_MM = 42.67
 
 
-def calculate_launch_angle(det1: Tuple[int, int, int], det2: Tuple[int, int, int]) -> float:
+def calculate_launch_angle(
+    det1: Tuple[int, int, int], det2: Tuple[int, int, int]
+) -> float:
     """Return launch angle in degrees from two detections."""
     x1, y1, r1 = det1
     x2, y2, r2 = det2

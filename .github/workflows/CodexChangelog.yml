@@ -1,7 +1,7 @@
 name: Update Changelog
 
 on:
-  workflow_dispatch: # or push, pull_request, etc.
+  workflow_dispatch: # You can also add `push` or `pull_request` if needed
 
 jobs:
   update-changelog:
@@ -21,8 +21,10 @@ jobs:
 
       - name: Install Codex CLI
         run: npm install -g @openai/codex
+        shell: bash  # Ensures consistency across platforms
 
       - name: Update changelog via Codex
         run: codex exec --full-auto "update CHANGELOG for next release"
+        shell: bash  # Ensures command is parsed properly
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_KEY }}

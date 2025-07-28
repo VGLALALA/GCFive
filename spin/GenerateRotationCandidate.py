@@ -1,11 +1,14 @@
-from concurrent.futures import ProcessPoolExecutor, as_completed
-from .RotationSearchSpace import RotationSearchSpace
-from .RotationCandidate import RotationCandidate
-from .Project2dImageTo3dBall import project_2d_image_to_3d_ball
-import numpy as np
-import time
-from functools import partial
 import multiprocessing
+import time
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from functools import partial
+
+import numpy as np
+
+from .Project2dImageTo3dBall import project_2d_image_to_3d_ball
+from .RotationCandidate import RotationCandidate
+from .RotationSearchSpace import RotationSearchSpace
+
 
 def _worker_task(task, base_image, ball):
     """
@@ -21,9 +24,10 @@ def _worker_task(task, base_image, ball):
     img3d = project_2d_image_to_3d_ball(base_image, ball, (x_deg, y_deg, z_deg))
     return idx, x_idx, y_idx, z_idx, img3d
 
-def generate_rotation_candidates(base_dimple_image: np.ndarray,
-                                 search_space: RotationSearchSpace,
-                                 ball) -> tuple[np.ndarray, tuple[int, int, int], list]:
+
+def generate_rotation_candidates(
+    base_dimple_image: np.ndarray, search_space: RotationSearchSpace, ball
+) -> tuple[np.ndarray, tuple[int, int, int], list]:
     """
     Generate a set of rotated candidate images over the specified search space,
     in parallel using multiprocessing.
@@ -67,7 +71,7 @@ def generate_rotation_candidates(base_dimple_image: np.ndarray,
 
     # Spin up a pool of processes
     with ProcessPoolExecutor() as executor:
-        futures = { executor.submit(worker, task): task[0] for task in tasks }
+        futures = {executor.submit(worker, task): task[0] for task in tasks}
         for count, fut in enumerate(as_completed(futures), 1):
             idx, x_idx, y_idx, z_idx, img3d = fut.result()
             # record in output matrix
@@ -80,17 +84,20 @@ def generate_rotation_candidates(base_dimple_image: np.ndarray,
                 x_rotation_degrees=x_deg,
                 y_rotation_degrees=y_deg,
                 z_rotation_degrees=z_deg,
-                score=0.0
+                score=0.0,
             )
             # optional: simple progress indicator
             if count % (total // 10 or 1) == 0:
                 print(f"Progress: {count/total*100:.1f}%")
 
     t1 = time.perf_counter()
-    print(f"compute_candidate_angle_images took {t1 - t0:.3f}s, generated {total} candidates")
+    print(
+        f"compute_candidate_angle_images took {t1 - t0:.3f}s, generated {total} candidates"
+    )
 
     return output_mat, mat_size, candidates
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     multiprocessing.freeze_support()
     # Add any test code here if needed

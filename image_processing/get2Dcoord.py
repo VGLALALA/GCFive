@@ -1,5 +1,10 @@
 import math
-from image_processing.CamBalldistancePred import predict_distance_from_frame, load_calibration
+
+from image_processing.CamBalldistancePred import (
+    load_calibration,
+    predict_distance_from_frame,
+)
+
 
 def get_ball_xz(frame, dets):
     """
@@ -20,7 +25,7 @@ def get_ball_xz(frame, dets):
         return None  # no ball detected
 
     # 2) Find the ball in pixels
-    
+
     if not dets:
         return None
 

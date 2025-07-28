@@ -1,15 +1,18 @@
 import numpy as np
 import pytest
+
 cv2 = pytest.importorskip("cv2")
 
-from image_processing.Convert_GrayScale import convert_to_grayscale
-from image_processing.Convert_Canny import convert_to_canny
-from image_processing.ImageCompressor import compress_image
-from image_processing.RemoveReflection import remove_reflections
-from image_processing.movementDetection import has_ball_moved
-from image_processing.launchAngleCalculation import calculate_launch_angle as calc_launch
-from image_processing.ballSpeedCalculation import calculate_ball_speed
 import spin.GetLaunchAngle as GetLaunchAngle
+from image_processing.ballSpeedCalculation import calculate_ball_speed
+from image_processing.Convert_Canny import convert_to_canny
+from image_processing.Convert_GrayScale import convert_to_grayscale
+from image_processing.ImageCompressor import compress_image
+from image_processing.launchAngleCalculation import (
+    calculate_launch_angle as calc_launch,
+)
+from image_processing.movementDetection import has_ball_moved
+from image_processing.RemoveReflection import remove_reflections
 
 
 def test_convert_to_grayscale(tmp_path):
@@ -49,7 +52,10 @@ def test_remove_reflections():
 def test_has_ball_moved(monkeypatch):
     def fake_delta(a, b):
         return 0.0, 0.02, 0.0
-    monkeypatch.setattr('image_processing.movementDetection.delta_similarity', fake_delta)
+
+    monkeypatch.setattr(
+        "image_processing.movementDetection.delta_similarity", fake_delta
+    )
     prev = np.zeros((5, 5, 3), dtype=np.uint8)
     curr = np.zeros((5, 5, 3), dtype=np.uint8)
     moved, delta = has_ball_moved(prev, curr, (0, 0, 5, 5))
@@ -78,8 +84,11 @@ def test_ball_speed(monkeypatch):
             fake_detect.calls += 1
             return [(5, 5, 10)]
         return [(15, 5, 10)]
+
     fake_detect.calls = 0
-    monkeypatch.setattr('image_processing.ballSpeedCalculation.detect_golfballs', fake_detect)
+    monkeypatch.setattr(
+        "image_processing.ballSpeedCalculation.detect_golfballs", fake_detect
+    )
     frame1 = np.zeros((20, 20, 3), dtype=np.uint8)
     frame2 = np.zeros((20, 20, 3), dtype=np.uint8)
     speed = calculate_ball_speed(frame1, frame2, 0.01, return_mph=True)
@@ -92,8 +101,9 @@ def test_get_launch_angle(monkeypatch):
             fake_detect.calls += 1
             return [(10, 20, 5)]
         return [(20, 10, 5)]
+
     fake_detect.calls = 0
-    monkeypatch.setattr(GetLaunchAngle, 'detect_golfballs', fake_detect)
+    monkeypatch.setattr(GetLaunchAngle, "detect_golfballs", fake_detect)
     frame1 = np.zeros((30, 30), dtype=np.uint8)
     frame2 = np.zeros((30, 30), dtype=np.uint8)
     angle = GetLaunchAngle.calculate_launch_angle(frame1, frame2)

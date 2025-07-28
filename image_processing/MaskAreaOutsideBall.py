@@ -1,12 +1,17 @@
+from typing import Union
+
 import cv2
 import numpy as np
-from typing import Union
+
 from spin.GolfBall import GolfBall
 
-def mask_area_outside_ball(ball_image: np.ndarray,
-                           ball: GolfBall,
-                           mask_reduction_factor: float,
-                           mask_value: Union[int, tuple] = 128) -> np.ndarray:
+
+def mask_area_outside_ball(
+    ball_image: np.ndarray,
+    ball: GolfBall,
+    mask_reduction_factor: float,
+    mask_value: Union[int, tuple] = 128,
+) -> np.ndarray:
     """
     Masks everything outside a reduced‐radius circle around the ball,
     painting the outside region with mask_value.

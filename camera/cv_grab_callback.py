@@ -1,11 +1,16 @@
-#coding=utf-8
+# coding=utf-8
+import queue
+import time
+import traceback
+
 import cv2
 import numpy as np
+
 from camera.MVSCamera import MVSCamera
-import time
-import queue
-import traceback
-from image_processing.ballDetectionyolo import detect_golfballs  # Import YOLO detection function
+from image_processing.ballDetectionyolo import (  # Import YOLO detection function
+    detect_golfballs,
+)
+
 BALL_DIAM_MM = 42.67
 GOLF_BALL_RADIUS_MM = 21.335
 THRESHOLD_APART_MM = 50.0  # Minimum distance in mm for capture pairing
@@ -26,11 +31,15 @@ is_recording = False
 INITIAL_IDX, BEST_IDX = None, None
 INITIAL_FRAME, BEST_FRAME = None, None  # Corrected typo from INTIAL_FRAME
 
+
 def setup_camera_and_buffer():
     """Initialize and open the camera using the MVSCamera wrapper."""
     try:
         cam = MVSCamera(
-            640, 280, 0, 120,
+            640,
+            280,
+            0,
+            120,
             DESIRED_EXPOSURE_US,
             DESIRED_ANALOG_GAIN,
             DESIRED_GAMMA,
@@ -42,6 +51,7 @@ def setup_camera_and_buffer():
         traceback.print_exc()
         return None
 
+
 def release_camera_and_buffer(cam):
     """Close the MVSCamera and free any buffers."""
     try:
@@ -50,6 +60,7 @@ def release_camera_and_buffer(cam):
     except Exception as e:
         print("Exception in release_camera_and_buffer:", e)
         traceback.print_exc()
+
 
 def acquire_frames(cam, frame_queue, stop_event):
     """Continuously grab frames from the camera and push them onto a queue."""
@@ -66,15 +77,20 @@ def acquire_frames(cam, frame_queue, stop_event):
         traceback.print_exc()
     print("Acquisition thread stopped.")
 
+
 import math
+
 from camera.focalPointCalibration import load_calibration
 
-def process_frames(cam,
-                   detected_circle,
-                   original_cropped_roi,
-                   frame_queue,
-                   stop_event,
-                   interactive=False):
+
+def process_frames(
+    cam,
+    detected_circle,
+    original_cropped_roi,
+    frame_queue,
+    stop_event,
+    interactive=False,
+):
     """
     Pull frames, watch ROI for motion, record a burst, then:
 
@@ -115,14 +131,17 @@ def process_frames(cam,
             if frame is None:
                 break
 
-            gray = (cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                    if (not monoCamera and frame.ndim == 3) else frame)
+            gray = (
+                cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                if (not monoCamera and frame.ndim == 3)
+                else frame
+            )
 
             # crop + resize to match original_cropped_roi
-            x1c = max(0, min(first_x_px - half_crop, gray.shape[1]-1))
-            y1c = max(0, min(first_y_px - half_crop, gray.shape[0]-1))
-            x2c = max(x1c+1, min(first_x_px + half_crop, gray.shape[1]))
-            y2c = max(y1c+1, min(first_y_px + half_crop, gray.shape[0]))
+            x1c = max(0, min(first_x_px - half_crop, gray.shape[1] - 1))
+            y1c = max(0, min(first_y_px - half_crop, gray.shape[0] - 1))
+            x2c = max(x1c + 1, min(first_x_px + half_crop, gray.shape[1]))
+            y2c = max(y1c + 1, min(first_y_px + half_crop, gray.shape[0]))
             crop = gray[y1c:y2c, x1c:x2c]
             if crop.shape[:2] != original_cropped_roi.shape[:2] and crop.size:
                 try:
@@ -163,7 +182,7 @@ def process_frames(cam,
 
         # ——— 2) Auto best‑match pass: find frame ≈ FRAME_APART_MM apart ———
         print("\n=== Auto best‑match for separation ≈", THRESHOLD_APART_MM, "mm ===")
-        best_idx, best_score = None, float('inf')
+        best_idx, best_score = None, float("inf")
 
         for idx, frm in enumerate(recorded_frames):
             # prep for YOLO
@@ -180,7 +199,7 @@ def process_frames(cam,
                 print(f"YOLO error in frame {idx}:", e)
                 continue
 
-            for (cx, cy, rr) in circles:
+            for cx, cy, rr in circles:
                 # pixel‐space separation:
                 pd = math.hypot(cx - first_x_px, cy - first_y_px)
                 # convert px → mm (approx horizontal only)
@@ -203,9 +222,12 @@ def process_frames(cam,
         traceback.print_exc()
         stop_event.set()
     finally:
-        try: cv2.destroyAllWindows()
-        except: pass
+        try:
+            cv2.destroyAllWindows()
+        except:
+            pass
         print("Processing thread stopped.")
+
 
 def retriveData():
     return INITIAL_FRAME, BEST_FRAME, INITIAL_IDX, BEST_IDX

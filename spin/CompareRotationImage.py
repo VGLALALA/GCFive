@@ -1,11 +1,12 @@
-import numpy as np
 from typing import Tuple
+
+import numpy as np
+
 PIXEL_IGNORE_VALUE = 128
 
+
 def compare_rotation_image(
-    img1: np.ndarray,
-    img2: np.ndarray,
-    index: int
+    img1: np.ndarray, img2: np.ndarray, index: int
 ) -> Tuple[int, int, np.ndarray]:
     """
     Port of:
@@ -19,8 +20,9 @@ def compare_rotation_image(
     Returns: (score, total_pixels_examined, test_correspondence_img)
     """
     rows, cols = img1.shape
-    assert img2.shape[0] == rows and img2.shape[1] == cols,\
-           "img1 and img2 must have the same dimensions"
+    assert (
+        img2.shape[0] == rows and img2.shape[1] == cols
+    ), "img1 and img2 must have the same dimensions"
 
     # Prepare the correspondence image (uint8)
     test_correspondence_img = np.zeros((rows, cols), dtype=np.uint8)
@@ -43,4 +45,3 @@ def compare_rotation_image(
                 test_correspondence_img[y, x] = PIXEL_IGNORE_VALUE
 
     return score, total_pixels_examined, test_correspondence_img
-

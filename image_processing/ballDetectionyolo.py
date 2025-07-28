@@ -1,15 +1,18 @@
-import cv2
-import numpy as np
 import json
 import os
-from ultralytics import YOLO   # pip install ultralytics
+
+import cv2
+import numpy as np
+from ultralytics import YOLO  # pip install ultralytics
+
 # from .Convert_Canny import convert_to_canny   # keep if you still need it
 
-MODEL_PATH  = "data/model/golfballv4.pt"
-CLASS_ID    = 0   # change if your golf ball class id != 0
+MODEL_PATH = "data/model/golfballv4.pt"
+CLASS_ID = 0  # change if your golf ball class id != 0
 
 # ---------- YOLO STUFF ----------
 model = YOLO(MODEL_PATH)
+
 
 def detect_golfballs(image, conf=0.25, imgsz=640, display=True):
     """
@@ -39,11 +42,19 @@ def detect_golfballs(image, conf=0.25, imgsz=640, display=True):
             # Draw the bounding box and label on the image for debugging
             cv2.rectangle(image, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2)
             label = f"Golf Ball: {int(box.cls.item())}"
-            cv2.putText(image, label, (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+            cv2.putText(
+                image,
+                label,
+                (x_min, y_min - 10),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.5,
+                (0, 255, 0),
+                2,
+            )
 
     # sort left→right like your original code
     circle_data.sort(key=lambda c: c[0])
-    #print(f"Detected {len(circle_data)} golf ball(s).")
+    # print(f"Detected {len(circle_data)} golf ball(s).")
 
     if display:
         # Display the image with bounding boxes and labels
@@ -52,6 +63,7 @@ def detect_golfballs(image, conf=0.25, imgsz=640, display=True):
         cv2.destroyAllWindows()
 
     return circle_data
+
 
 def get_detection_bounding_boxes(image, conf=0.25, imgsz=640):
     """
@@ -71,11 +83,13 @@ def get_detection_bounding_boxes(image, conf=0.25, imgsz=640):
         if hasattr(box, "cls") and int(box.cls.item()) != CLASS_ID:
             continue
         x_min, y_min, x_max, y_max = box.xyxy.cpu().numpy().astype(int).flatten()
-       
+
     return [x_min, y_min, x_max, y_max]
 
 
 from spin.GolfBall import GolfBall
+
+
 def get_detected_balls_info(image, conf=0.25, imgsz=640):
     """
     Run YOLO on an image and return a list of GolfBall objects.
@@ -87,7 +101,6 @@ def get_detected_balls_info(image, conf=0.25, imgsz=640):
         return []
 
     boxes = results[0].boxes
-    
 
     for box in boxes:
         if hasattr(box, "cls") and int(box.cls.item()) != CLASS_ID:
@@ -102,7 +115,7 @@ def get_detected_balls_info(image, conf=0.25, imgsz=640):
             x=x_center,
             y=y_center,
             measured_radius_pixels=radius,
-            angles_camera_ortho_perspective=(0.0, 0.0, 0.0)  # Default values
+            angles_camera_ortho_perspective=(0.0, 0.0, 0.0),  # Default values
         )
-        
+
     return golf_ball

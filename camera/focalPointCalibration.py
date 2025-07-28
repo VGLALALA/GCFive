@@ -1,22 +1,25 @@
 #!/usr/bin/env python3
 # focalPointCalibration.py
 
-import os
-import json
-import time
 import ctypes
-import numpy as np
+import json
+import os
+import time
+
 import cv2
+import numpy as np
+
 from camera.MVSCamera import MVSCamera
 
 # -------- YOLO / detection --------
-YOLO_CONF  = 0.25
+YOLO_CONF = 0.25
 YOLO_IMGSZ = 640
-CLASS_ID   = 0        # golf ball class
+CLASS_ID = 0  # golf ball class
 MODEL_PATH = "data/model/golfballv4.pt"  # only used if you uncomment fallback
 
 # Try to use your existing detector
 from image_processing.ballDetection import detect_golfballs as yolo_detect
+
 HAS_EXTERNAL_DETECTOR = True
 
 # # ----- Fallback: inline detector (uncomment if needed) -----
@@ -41,20 +44,22 @@ HAS_EXTERNAL_DETECTOR = True
 # -------- Calibration constants --------
 CALIB_FILE = "calibration.json"
 GOLF_BALL_DIAMETER_MM = 42.67
-GOLF_BALL_RADIUS_MM   = GOLF_BALL_DIAMETER_MM / 2.0
+GOLF_BALL_RADIUS_MM = GOLF_BALL_DIAMETER_MM / 2.0
 
 # -------- Camera (mvsdk) config --------
 ROI_W, ROI_H = 640, 300
 ROI_X, ROI_Y = 0, 100
-EXPOSURE_US  = 500  # 0.5 ms
+EXPOSURE_US = 500  # 0.5 ms
 
 # -------- UI helpers (Tkinter) --------
 try:
     import tkinter as tk
     from tkinter import simpledialog
+
     HAS_TK = True
 except Exception:
     HAS_TK = False
+
 
 def ask_distance_mm(default_val=1000.0):
     """
@@ -65,9 +70,13 @@ def ask_distance_mm(default_val=1000.0):
         root = tk.Tk()
         root.withdraw()
         while True:
-            val = simpledialog.askstring("Calibration", "Enter TRUE distance (mm):",
-                                         initialvalue=str(default_val), parent=root)
-            if val is None:     # user cancelled
+            val = simpledialog.askstring(
+                "Calibration",
+                "Enter TRUE distance (mm):",
+                initialvalue=str(default_val),
+                parent=root,
+            )
+            if val is None:  # user cancelled
                 root.destroy()
                 return None
             try:
@@ -82,6 +91,7 @@ def ask_distance_mm(default_val=1000.0):
         except ValueError:
             return None
 
+
 # ------------- Calibration helpers -------------
 def load_calibration(path=CALIB_FILE):
     if not os.path.exists(path):
@@ -90,17 +100,20 @@ def load_calibration(path=CALIB_FILE):
         data = json.load(f)
     return data.get("focal_length_px"), data.get("samples", [])
 
+
 def save_calibration(focal_px, samples, path=CALIB_FILE):
     data = {
         "focal_length_px": focal_px,
-        "samples": [{"radius_px": r, "distance_mm": d} for r, d in samples]
+        "samples": [{"radius_px": r, "distance_mm": d} for r, d in samples],
     }
     with open(path, "w") as f:
         json.dump(data, f, indent=2)
     print(f"💾 Saved calibration to {path}")
 
+
 def calc_focal_length_px(radius_px, distance_mm):
     return (radius_px * distance_mm) / GOLF_BALL_RADIUS_MM
+
 
 def estimate_distance_mm(focal_px, radius_px):
     return (focal_px * GOLF_BALL_RADIUS_MM) / radius_px
@@ -109,20 +122,27 @@ def estimate_distance_mm(focal_px, radius_px):
 # ------------- Drawing helpers -------------
 def draw_dets(frame, dets):
     """Draw circles/boxes directly on the frame (no extra window)."""
-    for (xc, yc, r) in dets:
+    for xc, yc, r in dets:
         cv2.circle(frame, (int(xc), int(yc)), int(r), (0, 255, 0), 2)
         x1, y1 = int(xc - r), int(yc - r)
         x2, y2 = int(xc + r), int(yc + r)
         cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), 1)
-        cv2.putText(frame, "ball", (x1, max(0, y1 - 4)),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 255, 0), 1)
+        cv2.putText(
+            frame,
+            "ball",
+            (x1, max(0, y1 - 4)),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.45,
+            (0, 255, 0),
+            1,
+        )
 
 
 def overlay_text(frame, mode, focal_px):
     txt1 = f"Mode: {mode}  | ENTER=Capture  m=ToggleMode  q=Quit"
     txt2 = f"Focal(px): {focal_px:.2f}" if focal_px else "Focal(px): N/A"
-    cv2.putText(frame, txt1, (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (50,255,255), 1)
-    cv2.putText(frame, txt2, (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (50,255,255), 1)
+    cv2.putText(frame, txt1, (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (50, 255, 255), 1)
+    cv2.putText(frame, txt2, (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (50, 255, 255), 1)
 
 
 # ------------- Main interactive loop -------------
@@ -156,7 +176,9 @@ def main():
 
             if key in ENTER_KEYS:
                 # Capture & process
-                dets = yolo_detect(frame, conf=YOLO_CONF, imgsz=YOLO_IMGSZ, display=False)
+                dets = yolo_detect(
+                    frame, conf=YOLO_CONF, imgsz=YOLO_IMGSZ, display=False
+                )
                 if not dets:
                     print("⚠ No ball detected on capture.")
                     continue
@@ -187,11 +209,11 @@ def main():
 
             cv2.imshow("Cam", frame)
 
-            if key == ord('m'):
+            if key == ord("m"):
                 mode = "ESTIMATE" if mode == "CALIB" else "CALIB"
                 print(f"Switched mode → {mode}")
 
-            elif key == ord('q'):
+            elif key == ord("q"):
                 break
 
     finally:

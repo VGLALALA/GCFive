@@ -1,10 +1,22 @@
-import camera.mvsdk as mvsdk
-import numpy as np
 import ctypes
 import platform
 
+import numpy as np
+
+import camera.mvsdk as mvsdk
+
+
 class MVSCamera:
-    def __init__(self, roi_w, roi_h, roi_x, roi_y, exposure_us, desired_analog_gain, desired_gamma):
+    def __init__(
+        self,
+        roi_w,
+        roi_h,
+        roi_x,
+        roi_y,
+        exposure_us,
+        desired_analog_gain,
+        desired_gamma,
+    ):
         self.roi_w, self.roi_h = roi_w, roi_h
         self.roi_x, self.roi_y = roi_x, roi_y
         self.exposure_us = exposure_us
@@ -21,8 +33,10 @@ class MVSCamera:
             raise RuntimeError("No camera found")
         self.hCamera = mvsdk.CameraInit(devs[0], -1, -1)
         cap = mvsdk.CameraGetCapability(self.hCamera)
-        self.mono = (cap.sIspCapacity.bMonoSensor != 0)
-        fmt = mvsdk.CAMERA_MEDIA_TYPE_MONO8 if self.mono else mvsdk.CAMERA_MEDIA_TYPE_BGR8
+        self.mono = cap.sIspCapacity.bMonoSensor != 0
+        fmt = (
+            mvsdk.CAMERA_MEDIA_TYPE_MONO8 if self.mono else mvsdk.CAMERA_MEDIA_TYPE_BGR8
+        )
         mvsdk.CameraSetIspOutFormat(self.hCamera, fmt)
         res = mvsdk.CameraGetImageResolution(self.hCamera)
         res.iIndex = 0xFF
@@ -39,7 +53,9 @@ class MVSCamera:
 
         # Set analog gain
         gmin, gmax, _ = mvsdk.CameraGetAnalogGainXRange(self.hCamera)
-        mvsdk.CameraSetAnalogGainX(self.hCamera, max(gmin, min(self.desired_analog_gain, gmax)))
+        mvsdk.CameraSetAnalogGainX(
+            self.hCamera, max(gmin, min(self.desired_analog_gain, gmax))
+        )
 
         # Set gamma
         gamma_max = cap.sGammaRange.iMax
@@ -60,9 +76,13 @@ class MVSCamera:
         mvsdk.CameraReleaseImageBuffer(self.hCamera, pRaw)
         frame_data = (ctypes.c_ubyte * head.uBytes).from_address(self.buf)
         if self.mono:
-            frame = np.frombuffer(frame_data, dtype=np.uint8).reshape((head.iHeight, head.iWidth))
+            frame = np.frombuffer(frame_data, dtype=np.uint8).reshape(
+                (head.iHeight, head.iWidth)
+            )
         else:
-            frame = np.frombuffer(frame_data, dtype=np.uint8).reshape((head.iHeight, head.iWidth, 3))
+            frame = np.frombuffer(frame_data, dtype=np.uint8).reshape(
+                (head.iHeight, head.iWidth, 3)
+            )
         return frame
 
     def close(self):
