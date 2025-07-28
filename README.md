@@ -1,46 +1,74 @@
 # GCFive
 
-GCFive contains a collection of Python utilities for detecting a golf ball in high‑speed camera images, estimating the ball's spin between frames, and simulating its resulting trajectory. The repository is organized as a set of standalone scripts together with a small physics module translated from the Godot game engine.
+GCFive provides a set of utilities for capturing high‑speed camera frames of a golf ball, extracting its spin from consecutive images, and simulating the resulting trajectory. The codebase grew out of experimentation with a HuaTeng industrial camera and the physics model from the open‑source JaySimG project. The repository is organised as a standalone Python package accompanied by helper scripts and Jupyter notebooks.
 
 ## Features
 
-- **Camera capture** – Scripts in the `Camera/` folder interface with the HuaTeng Vision SDK to grab images from a high‑speed industrial camera.
-- **Ball detection** – `ball_detection.py` provides a threaded capture pipeline that searches each frame for the golf ball and begins tracking once detected.
-- **Spin estimation** – `GetBallRotation.py` isolates the ball from two frames, applies Gabor filtering to highlight dimples, and searches a 3‑D rotation space to find the best alignment.
-- **Trajectory physics** – `trajectory_simulation/` contains a Python approximation of the JaySimG project’s physics scripts. `train_physics.py` tunes aerodynamic constants to match real shot data.
-- **Example data** – The `data/Images/` folder includes sample frames for experimentation and the `data/spin/` folder holds analysis results.
+- **Camera capture** &ndash; Modules in `camera/` wrap the HuaTeng Vision SDK so that images can be streamed from the camera with minimal boilerplate. The `cv_grab_callback` helper manages frame acquisition threads and buffers.
+- **Ball detection** &ndash; Image preprocessing routines live in `image_processing/`. They include traditional methods as well as a YOLO based detector (`ballDetectionyolo.py`) used by the main capture pipeline.
+- **Spin estimation** &ndash; The `spin/` package searches a 3&ndash;D rotation space to align two ball images. It relies on Gabor filtering to emphasise dimple patterns and outputs side‑, back‑ and axial‑spin.
+- **Trajectory physics** &ndash; Scripts in `trajectory_simulation/` are a Python approximation of the Godot scripts from JaySimG. They allow a shot’s flight to be simulated and metrics such as carry distance and apex to be derived.
+- **Example data** &ndash; Small sample images are included under `data/Images/` and spin analysis output lives in `data/spin/`.
 
 ## Installation
 
-1. Install the Python dependencies:
+1. Install the Python requirements:
    ```bash
    pip install -r requirements.txt
    ```
-2. Install the HuaTeng camera SDK. Binary packages for several architectures are provided. Choose the package matching your system (check `uname -a`). For example, on Ubuntu x86‑64:
+2. Install the HuaTeng camera SDK. Prebuilt binaries are provided under `sdk/`. Choose the package matching your architecture (see `uname -a`) and install it, for example on Ubuntu:
    ```bash
    sudo dpkg -i MVS-2.1.2_x86_64_20221024.deb
    ```
-   or extract the `.tar.gz` archive and run `setup.sh`.
-   A Chinese/English package list is also available in the legacy `README` file for reference.
+   Alternatively extract the `tar.gz` archive and run its `setup.sh` script.
+3. (Optional) Review `calibration.json` and `hitting_zone_calibration.json` if you need to adjust the camera calibration or hitting zone samples.
 
-## Usage
+## Quick start
 
-- **Capturing frames** – Run `ball_detection.py` to connect to the camera, detect the ball, and start monitoring. Press `q` in the display window to stop.
-- **Estimating spin** – After obtaining two cropped ball images, call `GetBallRotation.get_fine_ball_rotation(image1, image2)` to return the side‑, back‑ and axial‑spin angles. Running the script directly prompts for image paths and prints the spin in RPM.
-- **Training the physics model** – Execute `train_physics.py <dataset.csv>` where the CSV contains columns such as `Carry`, `Ball Speed`, `Spin`, `VLA`, `Apex`, and `Land Angle`. The optimizer logs results to `train_logs/` by default.
+- **Capture and detect**
+  ```bash
+  python main.py
+  ```
+  The script connects to the camera, waits for a ball to appear in the predefined zone and records a short burst of frames. Press `q` in the display window to exit.
+- **Estimate spin between two images**
+  ```bash
+  python spin/GetBallRotation.py image1.png image2.png
+  ```
+  The command line interface prints the calculated RPM values. Alternatively import `get_fine_ball_rotation` from Python code.
+- **Simulate a flight**
+  ```bash
+  python trajectory_simulation/flightDataCalculation.py
+  ```
+  This module exposes helpers such as `get_trajectory_metrics()` that take launch conditions and return carry distance, total distance and more.
+- **Train the physics model**
+  ```bash
+  python trajectory_simulation/train_physics.py shots.csv
+  ```
+  The CSV should contain columns like `Carry`, `Ball Speed`, `Spin`, `VLA`, `Apex` and `Land Angle`. Optimiser output is written to `results/train_log/`.
+
+## Running the tests
+
+Unit tests cover the physics utilities and parts of the image pipeline. After installing the requirements simply execute:
+
+```bash
+pytest
+```
+
+Tests requiring OpenCV attempt to import `cv2`; if the dependency is unavailable they will be skipped.
 
 ## Repository layout
 
 ```
-camera/                Camera capture utilities and SDK wrappers
-image_processing/     Preprocessing helpers for ball images
-spin/                 Golf ball rotation and physics modules
-trajectory_simulation/  Physics simulation utilities translated from Godot
-notebooks/            Example Jupyter notebooks
-data/                   Sample images and spin analysis output
-lib/, sdk/              Prebuilt binaries for the HuaTeng Vision camera
+camera/                Camera and calibration helpers
+image_processing/      Preprocessing and detection routines
+spin/                  Ball rotation search and utility functions
+trajectory_simulation/ Physics model translated from Godot
+notebooks/             Example notebooks demonstrating the code
+scripts/               Miscellaneous helpers
+data/                  Sample images and spin results
+sdk/                   HuaTeng Vision SDK binaries
 ```
 
 ## License
 
-This project is released under the MIT License. See `LICENSE` for details.
+This project is released under the MIT License. See `LICENSE` for the full text.
