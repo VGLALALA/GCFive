@@ -29,7 +29,7 @@ jobs:
       - name: Run pre-commit
         run: pre-commit run --all-files --show-diff-on-failure || true
 
-      - name: Auto-commit pre-commit fixes (Ubuntu only)
+      - name: Auto-commit pre-commit fixes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -41,4 +41,3 @@ jobs:
 
           git commit -m "chore: auto-fix via pre-commit"
           git push origin HEAD:$BRANCH_NAME --force
-

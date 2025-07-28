@@ -1,14 +1,13 @@
 name: Update Changelog
 
 on:
-  workflow_dispatch: # You can also add `push` or `pull_request` if needed
-
+  pull_request:
+  push:
+    branches: [main]
+    
 jobs:
   update-changelog:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest]
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
