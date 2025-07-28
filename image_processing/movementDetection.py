@@ -1,11 +1,15 @@
+from typing import Tuple
 
 import cv2
-from typing import Tuple
+
 from image_processing.SimilarityCalculation import delta_similarity
 
 FRAME_SIMILARITY_DELTA = 0.01
 
-def has_ball_moved(prev_frame: cv2.Mat, curr_frame: cv2.Mat, bbox: Tuple[int, int, int, int]) -> Tuple[bool, float]:
+
+def has_ball_moved(
+    prev_frame: cv2.Mat, curr_frame: cv2.Mat, bbox: Tuple[int, int, int, int]
+) -> Tuple[bool, float]:
     """Return True if the region defined by bbox changed more than FRAME_SIMILARITY_DELTA."""
     x1, y1, x2, y2 = bbox
     x1 = max(0, x1)
@@ -18,4 +22,3 @@ def has_ball_moved(prev_frame: cv2.Mat, curr_frame: cv2.Mat, bbox: Tuple[int, in
         return False, 0.0
     _, delta, _ = delta_similarity(roi_prev, roi_curr)
     return delta > FRAME_SIMILARITY_DELTA, delta
-

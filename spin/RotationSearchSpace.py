@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+
+
 @dataclass
 class RotationSearchSpace:
     # X-axis rotation range

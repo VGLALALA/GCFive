@@ -1,6 +1,7 @@
 import numpy as np
-from spin.Vector2RPM import calculate_spin_components
+
 from spin.spinAxis import calculate_spin_axis
+from spin.Vector2RPM import calculate_spin_components
 
 
 def test_calculate_spin_components():

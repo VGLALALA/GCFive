@@ -1,12 +1,11 @@
 import cv2
 import numpy as np
-from spin.GolfBall import GolfBall
-from image_processing.ballDetection import get_detected_balls_info
 
-def isolate_ball(
-    img: np.ndarray,
-    ball: GolfBall
-) -> np.ndarray:
+from image_processing.ballDetection import get_detected_balls_info
+from spin.GolfBall import GolfBall
+
+
+def isolate_ball(img: np.ndarray, ball: GolfBall) -> np.ndarray:
     """
     Crops out a square region around the detected ball using YOLO model.
     If ball parameters not provided, auto-detects them using YOLO.
@@ -18,7 +17,7 @@ def isolate_ball(
     Returns:
         ball_crop: Cropped image of the ball.
     """
-    
+
     r = int(round(ball.measured_radius_pixels))
     x1 = int(round(ball.x - r))
     y1 = int(round(ball.y - r))

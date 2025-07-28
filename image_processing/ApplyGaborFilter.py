@@ -5,12 +5,10 @@ import numpy as np
 K_GABOR_MIN_WHITE_PERCENT = 38
 K_GABOR_MAX_WHITE_PERCENT = 44
 
-def create_gabor_kernel(ks: int,
-                        sigma: float,
-                        theta_deg: float,
-                        lambd: float,
-                        gamma: float,
-                        psi_deg: float) -> np.ndarray:
+
+def create_gabor_kernel(
+    ks: int, sigma: float, theta_deg: float, lambd: float, gamma: float, psi_deg: float
+) -> np.ndarray:
     """
     Port of CreateGaborKernel:
       ks    – kernel size
@@ -21,19 +19,23 @@ def create_gabor_kernel(ks: int,
       psi   – phase offset in degrees
     """
     theta = np.deg2rad(theta_deg)
-    psi   = np.deg2rad(psi_deg)
+    psi = np.deg2rad(psi_deg)
     # Note: OpenCV expects (ks, ks), sigma, theta, lambd, gamma, psi
-    return cv2.getGaborKernel((ks, ks), sigma, theta, lambd, gamma, psi, ktype=cv2.CV_32F)
+    return cv2.getGaborKernel(
+        (ks, ks), sigma, theta, lambd, gamma, psi, ktype=cv2.CV_32F
+    )
 
 
-def apply_test_gabor_filter(img_f32: np.ndarray,
-                            kernel_size: int,
-                            sig: float,
-                            lm: float,
-                            th: float,
-                            ps: float,
-                            gm: float,
-                            binary_threshold: float) -> (np.ndarray, int):
+def apply_test_gabor_filter(
+    img_f32: np.ndarray,
+    kernel_size: int,
+    sig: float,
+    lm: float,
+    th: float,
+    ps: float,
+    gm: float,
+    binary_threshold: float,
+) -> (np.ndarray, int):
     """
     Apply a bank of rotated Gabor filters, threshold, and compute white‐pixel percentage.
     Returns (binary_edge_image, white_percent).
@@ -55,13 +57,13 @@ def apply_test_gabor_filter(img_f32: np.ndarray,
     )
 
     # Compute white‐pixel percentage
-    white_percent = int(round(
-        100.0 * cv2.countNonZero(dimple_edges) / (h * w)
-    ))
+    white_percent = int(round(100.0 * cv2.countNonZero(dimple_edges) / (h * w)))
     return dimple_edges, white_percent
 
 
-def apply_gabor_filter_image(image_gray: np.ndarray, prior_binary_threshold: float = -1.0) -> (np.ndarray, float):
+def apply_gabor_filter_image(
+    image_gray: np.ndarray, prior_binary_threshold: float = -1.0
+) -> (np.ndarray, float):
     """
     Mimics ApplyGaborFilterToBall. Returns (edge_image, calibrated_threshold).
     """
@@ -73,21 +75,21 @@ def apply_gabor_filter_image(image_gray: np.ndarray, prior_binary_threshold: flo
 
     # default "pos_" parameters (tweak as desired)
     kernel_size = 21
-    pos_sigma  = 2
+    pos_sigma = 2
     pos_lambda = 6
-    pos_gamma  = 4
-    pos_th     = 60
-    pos_psi    = 27
+    pos_gamma = 4
+    pos_th = 60
+    pos_psi = 27
     binary_threshold = 5
 
     if prior_binary_threshold > 0:
         binary_threshold = prior_binary_threshold
 
     sig = pos_sigma / 2.0
-    lm  = float(pos_lambda)
-    th  = float(pos_th) * 2.0
-    ps  = float(pos_psi) * 10.0
-    gm  = pos_gamma / 20.0
+    lm = float(pos_lambda)
+    th = float(pos_th) * 2.0
+    ps = float(pos_psi) * 10.0
+    gm = pos_gamma / 20.0
 
     # first pass
     dimple_img, white_percent = apply_test_gabor_filter(
@@ -99,15 +101,22 @@ def apply_gabor_filter_image(image_gray: np.ndarray, prior_binary_threshold: flo
         white_percent < K_GABOR_MIN_WHITE_PERCENT
         or white_percent >= K_GABOR_MAX_WHITE_PERCENT
     ):
-        ratchet_down = (white_percent < K_GABOR_MIN_WHITE_PERCENT)
+        ratchet_down = white_percent < K_GABOR_MIN_WHITE_PERCENT
 
         while (
             white_percent < K_GABOR_MIN_WHITE_PERCENT
             or white_percent >= K_GABOR_MAX_WHITE_PERCENT
         ):
             # step size
-            delta = 1.0 if abs((ratchet_down and K_GABOR_MIN_WHITE_PERCENT - white_percent) or
-                               (not ratchet_down and white_percent - K_GABOR_MAX_WHITE_PERCENT)) > 5 else 0.5
+            delta = (
+                1.0
+                if abs(
+                    (ratchet_down and K_GABOR_MIN_WHITE_PERCENT - white_percent)
+                    or (not ratchet_down and white_percent - K_GABOR_MAX_WHITE_PERCENT)
+                )
+                > 5
+                else 0.5
+            )
             binary_threshold += -delta if ratchet_down else +delta
 
             # clamp to avoid infinite loop

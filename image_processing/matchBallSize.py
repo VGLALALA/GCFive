@@ -1,8 +1,12 @@
+from typing import Tuple
+
 import cv2
 import numpy as np
-from typing import Tuple
+
 from spin.GolfBall import GolfBall
+
 from .FormatImage import format_image_to_golfball
+
 
 def match_ball_image_sizes(img1, img2, ball1=None, ball2=None):
     """
@@ -20,7 +24,9 @@ def match_ball_image_sizes(img1, img2, ball1=None, ball2=None):
         pad_bottom = target_h - h - pad_top
         pad_left = (target_w - w) // 2
         pad_right = target_w - w - pad_left
-        return cv2.copyMakeBorder(img, pad_top, pad_bottom, pad_left, pad_right, cv2.BORDER_CONSTANT, value=0)
+        return cv2.copyMakeBorder(
+            img, pad_top, pad_bottom, pad_left, pad_right, cv2.BORDER_CONSTANT, value=0
+        )
 
     img1_padded = pad_to_shape(img1, target_h, target_w)
     img2_padded = pad_to_shape(img2, target_h, target_w)

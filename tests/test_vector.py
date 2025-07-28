@@ -1,5 +1,6 @@
 import numpy as np
-from trajectory_simulation.vector import vec3, length, normalized, cross, dot
+
+from trajectory_simulation.vector import cross, dot, length, normalized, vec3
 
 
 def test_vec3_creation():

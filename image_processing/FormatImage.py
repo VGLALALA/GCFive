@@ -1,7 +1,10 @@
 import cv2
 import numpy as np
+
 from spin.GolfBall import GolfBall
+
 from .ballDetection import detect_golfballs
+
 
 def format_image_to_golfball(image_path: str) -> GolfBall:
     """
@@ -22,6 +25,10 @@ def format_image_to_golfball(image_path: str) -> GolfBall:
 
     if circles:
         x, y, r = circles[0]
-        return GolfBall(x=x, y=y, measured_radius_pixels=r,
-                        angles_camera_ortho_perspective=(0.0, 0.0, 0.0))
+        return GolfBall(
+            x=x,
+            y=y,
+            measured_radius_pixels=r,
+            angles_camera_ortho_perspective=(0.0, 0.0, 0.0),
+        )
     raise ValueError("No golf ball detected in the image.")

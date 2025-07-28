@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
-import time
-import threading
 import queue
+import threading
+import time
+
 import mvsdk
 
 ROI_W, ROI_H = 640, 280
-ROI_X, ROI_Y = 0,   120
+ROI_X, ROI_Y = 0, 120
 
 # how many frames total to grab
 TOTAL_FRAMES = 1600
 # how many worker threads you want
 WORKERS = 4
+
 
 def worker(hCamera, work_q):
     """
@@ -44,19 +46,19 @@ def main():
     hCam = mvsdk.CameraInit(devs[0], -1, -1)
 
     try:
-        cap  = mvsdk.CameraGetCapability(hCam)
+        cap = mvsdk.CameraGetCapability(hCam)
         mono = bool(cap.sIspCapacity.bMonoSensor)
-        fmt  = mvsdk.CAMERA_MEDIA_TYPE_MONO8 if mono else mvsdk.CAMERA_MEDIA_TYPE_BGR8
+        fmt = mvsdk.CAMERA_MEDIA_TYPE_MONO8 if mono else mvsdk.CAMERA_MEDIA_TYPE_BGR8
         mvsdk.CameraSetIspOutFormat(hCam, fmt)
 
         res = mvsdk.CameraGetImageResolution(hCam)
-        res.iIndex      = 0xFF
+        res.iIndex = 0xFF
         res.iHOffsetFOV = ROI_X
         res.iVOffsetFOV = ROI_Y
-        res.iWidthFOV   = ROI_W
-        res.iHeightFOV  = ROI_H
-        res.iWidth      = ROI_W
-        res.iHeight     = ROI_H
+        res.iWidthFOV = ROI_W
+        res.iHeightFOV = ROI_H
+        res.iWidth = ROI_W
+        res.iHeight = ROI_H
         mvsdk.CameraSetImageResolution(hCam, res)
 
         mvsdk.CameraSetTriggerMode(hCam, 0)
@@ -90,10 +92,13 @@ def main():
         work_q.join()
         elapsed = time.perf_counter() - start
 
-        print(f"Captured+processed {TOTAL_FRAMES} frames in {elapsed:.3f}s → {TOTAL_FRAMES/elapsed:.2f} FPS")
+        print(
+            f"Captured+processed {TOTAL_FRAMES} frames in {elapsed:.3f}s → {TOTAL_FRAMES/elapsed:.2f} FPS"
+        )
 
     finally:
         mvsdk.CameraUnInit(hCam)
+
 
 if __name__ == "__main__":
     main()

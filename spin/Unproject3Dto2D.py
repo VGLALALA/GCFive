@@ -1,5 +1,7 @@
 import numpy as np
+
 from .GolfBall import GolfBall
+
 
 def unproject_3d_ball_to_2d_image(src3D: np.ndarray, ball: GolfBall) -> np.ndarray:
     """
@@ -33,4 +35,3 @@ def unproject_3d_ball_to_2d_image(src3D: np.ndarray, ball: GolfBall) -> np.ndarr
     # destination_image_gray = cv2.morphologyEx(destination_image_gray, cv2.MORPH_CLOSE, kernel)
 
     return destination_image_gray
-
