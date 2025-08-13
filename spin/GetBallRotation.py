@@ -20,17 +20,19 @@ from spin.GetRotatedImage import get_rotated_image
 from spin.GolfBall import GolfBall
 from spin.RotationSearchSpace import RotationSearchSpace
 
-COARSE_X_INC = 6
-COARSE_X_START = -42
-COARSE_X_END = 42
+from config_reader import CONFIG
 
-COARSE_Y_INC = 5
-COARSE_Y_START = -30
-COARSE_Y_END = 30
+COARSE_X_INC = CONFIG.getint("Spin", "coarse_x_inc", fallback=6)
+COARSE_X_START = CONFIG.getint("Spin", "coarse_x_start", fallback=-42)
+COARSE_X_END = CONFIG.getint("Spin", "coarse_x_end", fallback=42)
 
-COARSE_Z_INC = 6
-COARSE_Z_START = -50
-COARSE_Z_END = 60
+COARSE_Y_INC = CONFIG.getint("Spin", "coarse_y_inc", fallback=5)
+COARSE_Y_START = CONFIG.getint("Spin", "coarse_y_start", fallback=-30)
+COARSE_Y_END = CONFIG.getint("Spin", "coarse_y_end", fallback=30)
+
+COARSE_Z_INC = CONFIG.getint("Spin", "coarse_z_inc", fallback=6)
+COARSE_Z_START = CONFIG.getint("Spin", "coarse_z_start", fallback=-50)
+COARSE_Z_END = CONFIG.getint("Spin", "coarse_z_end", fallback=60)
 
 
 def get_fine_ball_rotation(
