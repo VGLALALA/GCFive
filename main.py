@@ -24,12 +24,11 @@ from spin.Vector2RPM import calculate_spin_components
 from trajectory_simulation.flightDataCalculation import get_trajectory_metrics
 
 RECALIBRATE_HITTING_ZONE = False
-FPS = 1305
-DELTA_T = 1 / FPS
 
 
 def main():
     initial_frame, best_match_frame = None, None
+    initial_ts, best_ts, delta_t = None, None, 0.0
     # Setup camera using the helper function from cv_grab_callback
     cam = cv_grab_callback.setup_camera_and_buffer()
     if cam is None:
@@ -154,14 +153,14 @@ def main():
         # Signal threads to stop and wait for them to finish
         stop_event.set()
         acquire_thread.join()
-        frame_queue.put(None)
+        frame_queue.put((None, None))
         process_thread.join()
 
-        # Retrieve the initial and best match frames from the processing thread
-        initial_frame, best_match_frame, initial_idx, best_idx = (
+        # Retrieve the initial and best match frames and their timestamps
+        initial_frame, best_match_frame, initial_ts, best_ts = (
             cv_grab_callback.retriveData()
         )
-        delta_idx = best_idx - initial_idx
+        delta_t = best_ts - initial_ts
 
         print("Monitoring stopped.")
 
@@ -172,14 +171,14 @@ def main():
     best_rot_x, best_rot_y, best_rot_z = get_fine_ball_rotation(
         initial_frame, best_match_frame
     )
-    delta_ms = DELTA_T * delta_idx * 1000
+    delta_ms = delta_t * 1000
     side_spin_rpm, back_spin_rpm, total_spin_rpm = calculate_spin_components(
         [best_rot_x, best_rot_y, best_rot_z], delta_ms
     )
     spin_axis = calculate_spin_axis(back_spin_rpm, side_spin_rpm)
     launch_angle = calculate_launch_angle(initial_frame, best_match_frame)
     ball_speed_mph = calculate_ball_speed(
-        initial_frame, best_match_frame, DELTA_T * delta_idx, return_mph=True
+        initial_frame, best_match_frame, delta_t, return_mph=True
     )
     data = {
         "Speed": ball_speed_mph,
