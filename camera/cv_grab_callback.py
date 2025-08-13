@@ -2,7 +2,6 @@
 import queue
 import time
 import traceback
-from collections import deque
 
 import cv2
 import numpy as np
@@ -25,9 +24,7 @@ SETUP_DET_INTERVAL = 0.5  # Interval for detection in setup mode
 WAIT_TO_CAPTURE = 1.5  # Time to hold still before entering hitting mode
 MOVEMENT_THRESHOLD_MM = 2.0
 # Motion detection parameters
-FRAME_HISTORY = 30  # Number of frames to retain for motion check
-DELTA_FRAMES = 20  # Compare frames this many apart
-MOVEMENT_RATIO = 0.9  # Require 90% of frames to exceed threshold
+RECORD_FRAMES = 10  # Number of frames to capture once movement is detected
 
 recorded_frames = []
 recorded_times = []
@@ -125,13 +122,10 @@ def process_frames(
 
         frame_count = 0
         start_time = time.time()
+        prev_crop = None
+        capture_count = 0
 
-        frame_buffer = deque(maxlen=FRAME_HISTORY)
-        time_buffer = deque(maxlen=FRAME_HISTORY)
-        crop_buffer = deque(maxlen=FRAME_HISTORY)
-        movement_flags = deque(maxlen=FRAME_HISTORY)
-
-        # ——— Phase A: wait for motion based on a history of frames ———
+        # ——— Phase A: wait for motion and record a burst once detected ———
         while not stop_event.is_set() or not frame_queue.empty():
             try:
                 frame, ts = frame_queue.get(timeout=0.1)
@@ -159,40 +153,27 @@ def process_frames(
                 except Exception:
                     continue
 
-            frame_buffer.append(gray.copy())
-            time_buffer.append(ts)
-            crop_buffer.append(crop.copy())
-
-            if len(crop_buffer) >= DELTA_FRAMES:
-                prev_crop = crop_buffer[-DELTA_FRAMES]
+            if prev_crop is not None:
                 diff = cv2.absdiff(prev_crop, crop)
                 md = np.mean(diff)
-                movement_flags.append(md > movement_threshold)
                 frame_count += 1
                 elapsed = time.time() - start_time
                 fps = frame_count / elapsed if elapsed > 0 else 0.0
                 print(f"Comparison FPS: {fps:.1f}, Mean Difference: {md:.2f}")
-            else:
-                continue
-
-            if len(movement_flags) == FRAME_HISTORY:
-                ratio = sum(movement_flags) / len(movement_flags)
-                print(
-                    f"Movement ratio over last {len(movement_flags)} frames: {ratio:.2f}"
-                )
-                if ratio >= MOVEMENT_RATIO:
-                    print("BALL MOVED → keeping recent frames")
-                    recorded_frames = list(frame_buffer)
-                    recorded_times = list(time_buffer)
+                if md > movement_threshold and not is_recording:
+                    print(f"Movement detected → recording {RECORD_FRAMES} frames")
+                    recorded_frames = []
+                    recorded_times = []
                     is_recording = True
+            prev_crop = crop
+
+            if is_recording:
+                recorded_frames.append(gray.copy())
+                recorded_times.append(ts)
+                capture_count += 1
+                if capture_count >= RECORD_FRAMES:
                     stop_event.set()
                     break
-                else:
-                    print("Movement not confirmed; resetting frame buffer")
-                    frame_buffer.clear()
-                    time_buffer.clear()
-                    crop_buffer.clear()
-                    movement_flags.clear()
 
         # ——— Reference real‑world coords from the *first* frame ———
         focal_px, _ = load_calibration()
