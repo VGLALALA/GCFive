@@ -22,6 +22,7 @@ MODEL_PATH = CONFIG.get(
 
 # Try to use your existing detector
 from image_processing.ballDetection import detect_golfballs as yolo_detect
+
 HAS_EXTERNAL_DETECTOR = CONFIG.getboolean(
     "Camera", "has_external_detector", fallback=True
 )

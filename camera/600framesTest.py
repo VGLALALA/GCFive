@@ -4,6 +4,7 @@ import threading
 import time
 
 import mvsdk
+
 from config_reader import CONFIG
 
 ROI_W = CONFIG.getint("Camera", "roi_w", fallback=640)

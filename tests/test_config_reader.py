@@ -1,5 +1,6 @@
 import config_reader
 
+
 def test_load_config_defaults():
     cfg = config_reader.load_config()
     assert cfg.getint("Camera", "roi_w") == 640
