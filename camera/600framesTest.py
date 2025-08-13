@@ -5,13 +5,17 @@ import time
 
 import mvsdk
 
-ROI_W, ROI_H = 640, 280
-ROI_X, ROI_Y = 0, 120
+from config_reader import CONFIG
+
+ROI_W = CONFIG.getint("Camera", "roi_w", fallback=640)
+ROI_H = CONFIG.getint("Camera", "roi_h", fallback=280)
+ROI_X = CONFIG.getint("Camera", "roi_x", fallback=0)
+ROI_Y = CONFIG.getint("Camera", "roi_y", fallback=120)
 
 # how many frames total to grab
-TOTAL_FRAMES = 1600
+TOTAL_FRAMES = CONFIG.getint("Benchmark", "total_frames", fallback=1600)
 # how many worker threads you want
-WORKERS = 4
+WORKERS = CONFIG.getint("Benchmark", "workers", fallback=4)
 
 
 def worker(hCamera, work_q):
@@ -63,7 +67,9 @@ def main():
 
         mvsdk.CameraSetTriggerMode(hCam, 0)
         mvsdk.CameraSetAeState(hCam, 0)
-        mvsdk.CameraSetExposureTime(hCam, 50)  # 0.05 ms
+        mvsdk.CameraSetExposureTime(
+            hCam, CONFIG.getint("Camera", "exposure_us", fallback=50)
+        )  # 0.05 ms
 
         gmin, gmax, _ = mvsdk.CameraGetAnalogGainXRange(hCam)
         mvsdk.CameraSetAnalogGainX(hCam, max(gmin, min(1000, gmax)))

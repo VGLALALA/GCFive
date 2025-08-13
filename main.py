@@ -9,6 +9,7 @@ import numpy as np
 
 import camera.cv_grab_callback as cv_grab_callback  # Import the monitoring module
 from camera.hittingZoneCalibration import calibrate_hitting_zone_stream
+from config_reader import CONFIG
 from image_processing.ballDetectionyolo import (  # Import YOLO detection function
     detect_golfballs,
 )
@@ -23,7 +24,11 @@ from spin.spinAxis import calculate_spin_axis
 from spin.Vector2RPM import calculate_spin_components
 from trajectory_simulation.flightDataCalculation import get_trajectory_metrics
 
-RECALIBRATE_HITTING_ZONE = False
+YOLO_CONF = CONFIG.getfloat("YOLO", "conf", fallback=0.25)
+YOLO_IMGSZ = CONFIG.getint("YOLO", "imgsz", fallback=640)
+RECALIBRATE_HITTING_ZONE = CONFIG.getboolean(
+    "Calibration", "recalibrate_hitting_zone", fallback=False
+)
 
 
 def main():
@@ -62,7 +67,7 @@ def main():
 
             # Use YOLO to detect golf balls
             detected_balls = detect_golfballs(
-                frame_bgr, conf=0.9, imgsz=640, display=False
+                frame_bgr, conf=YOLO_CONF, imgsz=YOLO_IMGSZ, display=False
             )
             ballx, ballz = get_ball_xz(frame_bgr, detected_balls)
             if detected_balls:

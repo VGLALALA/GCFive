@@ -10,17 +10,22 @@ import cv2
 import numpy as np
 
 from camera.MVSCamera import MVSCamera
+from config_reader import CONFIG
 
 # -------- YOLO / detection --------
-YOLO_CONF = 0.25
-YOLO_IMGSZ = 640
-CLASS_ID = 0  # golf ball class
-MODEL_PATH = "data/model/golfballv4.pt"  # only used if you uncomment fallback
+YOLO_CONF = CONFIG.getfloat("YOLO", "conf", fallback=0.25)
+YOLO_IMGSZ = CONFIG.getint("YOLO", "imgsz", fallback=640)
+CLASS_ID = CONFIG.getint("YOLO", "class_id", fallback=0)
+MODEL_PATH = CONFIG.get(
+    "YOLO", "model_path", fallback="data/model/golfballv4.pt"
+)  # only used if you uncomment fallback
 
 # Try to use your existing detector
 from image_processing.ballDetection import detect_golfballs as yolo_detect
 
-HAS_EXTERNAL_DETECTOR = True
+HAS_EXTERNAL_DETECTOR = CONFIG.getboolean(
+    "Camera", "has_external_detector", fallback=True
+)
 
 # # ----- Fallback: inline detector (uncomment if needed) -----
 # from ultralytics import YOLO
@@ -42,14 +47,18 @@ HAS_EXTERNAL_DETECTOR = True
 #     return dets
 
 # -------- Calibration constants --------
-CALIB_FILE = "calibration.json"
-GOLF_BALL_DIAMETER_MM = 42.67
+CALIB_FILE = CONFIG.get("Calibration", "calib_file", fallback="calibration.json")
+GOLF_BALL_DIAMETER_MM = CONFIG.getfloat(
+    "Calibration", "ball_diameter_mm", fallback=42.67
+)
 GOLF_BALL_RADIUS_MM = GOLF_BALL_DIAMETER_MM / 2.0
 
 # -------- Camera (mvsdk) config --------
-ROI_W, ROI_H = 640, 300
-ROI_X, ROI_Y = 0, 100
-EXPOSURE_US = 500  # 0.5 ms
+ROI_W = CONFIG.getint("Camera", "roi_w", fallback=640)
+ROI_H = CONFIG.getint("Camera", "roi_h", fallback=300)
+ROI_X = CONFIG.getint("Camera", "roi_x", fallback=0)
+ROI_Y = CONFIG.getint("Camera", "roi_y", fallback=100)
+EXPOSURE_US = CONFIG.getint("Camera", "exposure_us", fallback=500)  # 0.5 ms
 
 # -------- UI helpers (Tkinter) --------
 try:
