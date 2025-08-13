@@ -29,7 +29,7 @@ GCFive provides a set of utilities for capturing high‑speed camera frames of a
   ```bash
   python main.py
   ```
-  The script connects to the camera, waits for a ball to appear in the predefined zone and records a short burst of frames. Press `q` in the display window to exit.
+  The script connects to the camera, waits for a ball to appear in the predefined zone and records a short burst of frames. Press `q` in the display window to exit. To skip the zone requirement and trigger recording as soon as a ball is detected, set `[Detection] use_hitting_zone = false` in `config.cfg`.
 - **Estimate spin between two images**
   ```bash
   python spin/GetBallRotation.py image1.png image2.png

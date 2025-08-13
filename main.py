@@ -29,6 +29,7 @@ YOLO_IMGSZ = CONFIG.getint("YOLO", "imgsz", fallback=640)
 RECALIBRATE_HITTING_ZONE = CONFIG.getboolean(
     "Calibration", "recalibrate_hitting_zone", fallback=False
 )
+USE_HITTING_ZONE = CONFIG.getboolean("Detection", "use_hitting_zone", fallback=True)
 
 
 def main():
@@ -78,18 +79,21 @@ def main():
                 )
                 detected_circle = (center_x, center_y, radius)
 
-                # Check if the detected ball is within the predefined zone
-                if is_point_in_zone(ballx, ballz):
-                    print("Ball is within the zone.")
+                # Optionally check if the detected ball is within the predefined zone
+                if USE_HITTING_ZONE and not is_point_in_zone(ballx, ballz):
+                    print("Ball is outside the zone.")
+                    stationary_start_time = None
+                    continue
+                else:
+                    if USE_HITTING_ZONE:
+                        print("Ball is within the zone.")
+                    else:
+                        print("Zone check disabled.")
                     if stationary_start_time is None:
                         stationary_start_time = time.time()
                     elif time.time() - stationary_start_time >= 3:
                         ball_detected = True
                         print("Ball has been stationary for over 3 seconds.")
-                else:
-                    print("Ball is outside the zone.")
-                    stationary_start_time = None
-                    continue
 
                 # Calculate crop coordinates
                 crop_size = 100  # Size of the square crop around the ball
