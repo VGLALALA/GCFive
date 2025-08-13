@@ -4,18 +4,23 @@
 import json
 import os
 
+from config_reader import CONFIG
 from image_processing.ballDetection import detect_golfballs as yolo_detect
 
 # -------- Calibration constants --------
-CALIB_FILE = "calibration.json"
-GOLF_BALL_DIAMETER_MM = 42.67
+CALIB_FILE = CONFIG.get("Calibration", "calib_file", fallback="calibration.json")
+GOLF_BALL_DIAMETER_MM = CONFIG.getfloat(
+    "Calibration", "ball_diameter_mm", fallback=42.67
+)
 GOLF_BALL_RADIUS_MM = GOLF_BALL_DIAMETER_MM / 2.0  # 21.335 mm
-YOLO_CONF = 0.3
-YOLO_IMGSZ = 640
+YOLO_CONF = CONFIG.getfloat("YOLO", "conf", fallback=0.3)
+YOLO_IMGSZ = CONFIG.getint("YOLO", "imgsz", fallback=640)
 # -------- Camera (mvsdk) config --------
-ROI_W, ROI_H = 640, 300
-ROI_X, ROI_Y = 0, 100
-EXPOSURE_US = 50  # 0.5 ms
+ROI_W = CONFIG.getint("Camera", "roi_w", fallback=640)
+ROI_H = CONFIG.getint("Camera", "roi_h", fallback=300)
+ROI_X = CONFIG.getint("Camera", "roi_x", fallback=0)
+ROI_Y = CONFIG.getint("Camera", "roi_y", fallback=100)
+EXPOSURE_US = CONFIG.getint("Camera", "exposure_us", fallback=500)  # 0.5 ms
 
 
 # -------- Calibration helpers --------

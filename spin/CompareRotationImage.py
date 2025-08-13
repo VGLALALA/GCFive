@@ -2,7 +2,9 @@ from typing import Tuple
 
 import numpy as np
 
-PIXEL_IGNORE_VALUE = 128
+from config_reader import CONFIG
+
+PIXEL_IGNORE_VALUE = CONFIG.getint("Spin", "pixel_ignore_value", fallback=128)
 
 
 def compare_rotation_image(
