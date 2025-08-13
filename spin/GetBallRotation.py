@@ -212,7 +212,10 @@ if __name__ == "__main__":
     test_img_path1 = "data/Images/frame0.png"
     test_img_path2 = "data/Images/frame15.png"
 
-    delta_t = 10 / 1305
+    # Example timestamps for the two frames (replace with actual capture times)
+    timestamp1 = time.time()
+    timestamp2 = timestamp1 + 0.01  # Replace with actual capture time for frame2
+    delta_t = timestamp2 - timestamp1
 
     test_img1 = cv2.imread(test_img_path1, cv2.IMREAD_GRAYSCALE)
     test_img2 = cv2.imread(test_img_path2, cv2.IMREAD_GRAYSCALE)

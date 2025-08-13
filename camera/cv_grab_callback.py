@@ -27,9 +27,11 @@ MOVEMENT_THRESHOLD_MM = 2.0
 FRAMES_TO_CAPTURE = 10  # Number of frames to capture
 TARGET_FPS = 1300  # Target FPS for camera
 recorded_frames = []
+recorded_times = []
 is_recording = False
 INITIAL_IDX, BEST_IDX = None, None
 INITIAL_FRAME, BEST_FRAME = None, None  # Corrected typo from INTIAL_FRAME
+INITIAL_TS, BEST_TS = None, None
 
 
 def setup_camera_and_buffer():
@@ -69,7 +71,7 @@ def acquire_frames(cam, frame_queue, stop_event):
         while not stop_event.is_set():
             try:
                 frame = cam.grab()
-                frame_queue.put(frame)
+                frame_queue.put((frame, time.time()))
             except Exception as e:
                 print(f"Acquisition thread camera error: {e}")
     except Exception as e:
@@ -100,7 +102,7 @@ def process_frames(
 
     """
     print("Processing thread started.")
-    global recorded_frames, is_recording, INITIAL_FRAME, BEST_FRAME, INITIAL_IDX, BEST_IDX
+    global recorded_frames, recorded_times, is_recording, INITIAL_FRAME, BEST_FRAME, INITIAL_IDX, BEST_IDX, INITIAL_TS, BEST_TS
     monoCamera = cam.mono
 
     try:
@@ -124,7 +126,7 @@ def process_frames(
         # ——— Phase A: wait for motion, then record FRAMES_TO_CAPTURE frames ———
         while not stop_event.is_set() or not frame_queue.empty():
             try:
-                frame = frame_queue.get(timeout=0.1)
+                frame, ts = frame_queue.get(timeout=0.1)
             except queue.Empty:
                 continue
 
@@ -162,9 +164,11 @@ def process_frames(
                     print("BALL MOVED → starting recording")
                     is_recording = True
                     recorded_frames = []
+                    recorded_times = []
 
                 if is_recording:
                     recorded_frames.append(gray.copy())
+                    recorded_times.append(ts)
                     print(f"Recording FPS: {fps:.1f}")
                     if len(recorded_frames) >= FRAMES_TO_CAPTURE:
                         print(f"Recording complete: {len(recorded_frames)} frames")
@@ -215,6 +219,7 @@ def process_frames(
         else:
             INITIAL_FRAME, BEST_FRAME = recorded_frames[0], recorded_frames[best_idx]
             INITIAL_IDX, BEST_IDX = 0, best_idx
+            INITIAL_TS, BEST_TS = recorded_times[0], recorded_times[best_idx]
         print("Processing complete.")
 
     except Exception as e:
@@ -230,4 +235,4 @@ def process_frames(
 
 
 def retriveData():
-    return INITIAL_FRAME, BEST_FRAME, INITIAL_IDX, BEST_IDX
+    return INITIAL_FRAME, BEST_FRAME, INITIAL_TS, BEST_TS
