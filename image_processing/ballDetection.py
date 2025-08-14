@@ -77,27 +77,6 @@ def detect_golfballs(image, conf=0.25, imgsz=640, display=True):
     return circle_data
 
 
-def get_detection_bounding_boxes(image, conf=0.25, imgsz=640):
-    """
-    Run YOLO on an image and return a list of bounding box coordinates.
-    Each bounding box is represented as a tuple (x_min, y_min, x_max, y_max).
-    """
-    results = model.predict(source=image, conf=conf, imgsz=imgsz, verbose=False)
-    if not results:
-        return []
-
-    boxes = results[0].boxes
-
-    if boxes is None or len(boxes) == 0:
-        return []
-
-    for box in boxes:
-        if hasattr(box, "cls") and int(box.cls.item()) != CLASS_ID:
-            continue
-        x_min, y_min, x_max, y_max = box.xyxy.cpu().numpy().astype(int).flatten()
-
-    return [x_min, y_min, x_max, y_max]
-
 
 from spin.GolfBall import GolfBall
 

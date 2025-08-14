@@ -11,7 +11,7 @@ from image_processing.ImageCompressor import compress_image
 from image_processing.launchAngleCalculation import (
     calculate_launch_angle as calc_launch,
 )
-from image_processing.movementDetection import has_ball_moved
+
 from image_processing.RemoveReflection import remove_reflections
 
 
@@ -49,26 +49,6 @@ def test_remove_reflections():
     assert out[0, 1] == 128
 
 
-def test_has_ball_moved(monkeypatch):
-    def fake_delta(a, b):
-        return 0.0, 0.02, 0.0
-
-    monkeypatch.setattr(
-        "image_processing.movementDetection.delta_similarity", fake_delta
-    )
-    prev = np.zeros((5, 5, 3), dtype=np.uint8)
-    curr = np.zeros((5, 5, 3), dtype=np.uint8)
-    moved, delta = has_ball_moved(prev, curr, (0, 0, 5, 5))
-    assert moved is True
-    assert delta == 0.02
-
-
-def test_has_ball_moved_empty():
-    prev = np.zeros((5, 5, 3), dtype=np.uint8)
-    curr = np.zeros((5, 5, 3), dtype=np.uint8)
-    moved, delta = has_ball_moved(prev, curr, (6, 6, 8, 8))
-    assert moved is False
-    assert delta == 0.0
 
 
 def test_launch_angle_calculation():

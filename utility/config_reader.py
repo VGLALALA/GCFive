@@ -6,7 +6,13 @@ from pathlib import Path
 
 def load_config(path: str | None = None) -> configparser.ConfigParser:
     parser = configparser.ConfigParser()
-    cfg_path = Path(path) if path else Path(__file__).with_name("config.cfg")
+    if path:
+        cfg_path = Path(path)
+    else:
+        # Look for config.cfg in the data directory relative to the project root
+        project_root = Path(__file__).parent.parent
+        cfg_path = project_root / "data" / "config.cfg"
+    
     parser.read(cfg_path)
     return parser
 
