@@ -1,14 +1,25 @@
 # GCFive
 
-GCFive provides a set of utilities for capturing high‑speed camera frames of a golf ball, extracting its spin from consecutive images, and simulating the resulting trajectory. The codebase grew out of experimentation with a HuaTeng industrial camera and the physics model from the open‑source JaySimG project. The repository is organised as a standalone Python package accompanied by helper scripts and Jupyter notebooks.
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg) ![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.11-blue)
+
+**GCFive** is a high‑speed golf ball capture and analysis toolkit. It provides utilities for capturing high‑speed camera frames of a golf ball, extracting its spin from consecutive images, and simulating the resulting trajectory. The codebase grew out of experimentation with a HuaTeng industrial camera and the physics model from the open‑source JaySimG project. The repository is organised as a standalone Python package accompanied by helper scripts and Jupyter notebooks.
+
+## Table of Contents
+- [Features](#features)
+- [Installation](#installation)
+- [Quick start](#quick-start)
+- [Running the tests](#running-the-tests)
+- [Repository layout](#repository-layout)
+- [License](#license)
+- [Development](#development)
 
 ## Features
 
-- **Camera capture** &ndash; Modules in `camera/` wrap the HuaTeng Vision SDK so that images can be streamed from the camera with minimal boilerplate. The `cv_grab_callback` helper manages frame acquisition threads and buffers.
-- **Ball detection** &ndash; Image preprocessing routines live in `image_processing/`. They include traditional methods as well as a YOLO based detector (`ballDetectionyolo.py`) used by the main capture pipeline.
-- **Spin estimation** &ndash; The `spin/` package searches a 3&ndash;D rotation space to align two ball images. It relies on Gabor filtering to emphasise dimple patterns and outputs side‑, back‑ and axial‑spin.
-- **Trajectory physics** &ndash; Scripts in `trajectory_simulation/` are a Python approximation of the Godot scripts from JaySimG. They allow a shot’s flight to be simulated and metrics such as carry distance and apex to be derived.
-- **Example data** &ndash; Small sample images are included under `data/Images/` and spin analysis output lives in `data/spin/`.
+- 📸 **Camera capture** &ndash; Modules in `camera/` wrap the HuaTeng Vision SDK so that images can be streamed from the camera with minimal boilerplate. The `cv_grab_callback` helper manages frame acquisition threads and buffers.
+- 🎯 **Ball detection** &ndash; Image preprocessing routines live in `image_processing/`. They include traditional methods as well as a YOLO based detector (`ballDetectionyolo.py`) used by the main capture pipeline.
+- 🌀 **Spin estimation** &ndash; The `spin/` package searches a 3&ndash;D rotation space to align two ball images. It relies on Gabor filtering to emphasise dimple patterns and outputs side‑, back‑ and axial‑spin.
+- 🛫 **Trajectory physics** &ndash; Scripts in `trajectory_simulation/` are a Python approximation of the Godot scripts from JaySimG. They allow a shot’s flight to be simulated and metrics such as carry distance and apex to be derived.
+- 🗂️ **Example data** &ndash; Small sample images are included under `data/Images/` and spin analysis output lives in `data/spin/`.
 
 ## Installation
 
