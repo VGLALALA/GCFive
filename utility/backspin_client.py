@@ -1,13 +1,12 @@
-"""Client script to request ball spin calculation from the server."""
+"""Client script to request ball spin calculation from the server via HTTPS."""
 
 import base64
 import json
-import socket
+import requests
 from pathlib import Path
 from typing import Any
 
-HOST = "api.ddxcr.com"  # Server hostname or IP address
-PORT = 65432  # Server port to connect to
+API_URL = "https://api.ddxcr.com/backspin"  # Example HTTPS endpoint
 
 
 def _encode_image(path: str | Path) -> str:
@@ -23,17 +22,9 @@ def request_backspin(image1_path: str, image2_path: str) -> Any:
         "image2": _encode_image(image2_path),
     }
 
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.connect((HOST, PORT))
-        s.sendall(json.dumps(payload).encode("utf-8"))
-        data = b""
-        while True:
-            chunk = s.recv(4096)
-            if not chunk:
-                break
-            data += chunk
-
-    return json.loads(data.decode("utf-8"))
+    response = requests.post(API_URL, json=payload)
+    response.raise_for_status()
+    return response.json()
 
 
 def main() -> None:

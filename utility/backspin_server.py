@@ -1,17 +1,16 @@
-"""Simple socket server for ball spin calculation using image pairs."""
+"""Flask API server for ball spin calculation using image pairs."""
 
 import base64
 import json
-import socket
 from typing import Any
 
 import cv2
 import numpy as np
+from flask import Flask, request, jsonify
 
 from spin.GetBallRotation import get_fine_ball_rotation
 
-HOST = "0.0.0.0"  # Listen on all interfaces
-PORT = 65432  # Port to listen on (non-privileged ports are > 1023)
+app = Flask(__name__)
 
 
 def _decode_image(b64: str) -> np.ndarray:
@@ -21,52 +20,30 @@ def _decode_image(b64: str) -> np.ndarray:
     return cv2.imdecode(img_array, cv2.IMREAD_COLOR)
 
 
-def handle_client(conn: socket.socket) -> None:
-    """Receive image data from *conn*, compute spin and return result.
+@app.route("/backspin", methods=["POST"])
+def backspin_endpoint():
+    """API endpoint to receive image data, compute spin, and return result."""
+    payload: Any = request.get_json(force=True)
+    image1_b64: str = payload["image1"]
+    image2_b64: str = payload["image2"]
 
-    Parameters
-    ----------
-    conn:
-        Established socket connection to the client.
-    """
-    with conn:
-        data = b""
-        while True:
-            packet = conn.recv(4096)
-            if not packet:
-                break
-            data += packet
-        if not data:
-            return
+    ball_image1 = _decode_image(image1_b64)
+    ball_image2 = _decode_image(image2_b64)
 
-        payload: Any = json.loads(data.decode("utf-8"))
-        image1_b64: str = payload["image1"]
-        image2_b64: str = payload["image2"]
+    spin_x, spin_y, spin_z = get_fine_ball_rotation(ball_image1, ball_image2)
 
-        ball_image1 = _decode_image(image1_b64)
-        ball_image2 = _decode_image(image2_b64)
+    result = {
+        "side_spin_deg": spin_x,
+        "back_spin_deg": spin_y,
+        "axial_spin_deg": spin_z,
+    }
 
-        spin_x, spin_y, spin_z = get_fine_ball_rotation(ball_image1, ball_image2)
-
-        result = {
-            "side_spin_deg": spin_x,
-            "back_spin_deg": spin_y,
-            "axial_spin_deg": spin_z,
-        }
-
-        conn.sendall(json.dumps(result).encode("utf-8"))
+    return jsonify(result)
 
 
 def main() -> None:
-    """Run the backspin calculation server."""
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind((HOST, PORT))
-        s.listen()
-        print(f"Backspin server listening on {HOST}:{PORT}")
-        while True:
-            conn, addr = s.accept()
-            print(f"Connected by {addr}")
-            handle_client(conn)
+    """Run the backspin calculation API server."""
+    app.run(host="0.0.0.0", port=5000, debug=False)
 
 
 if __name__ == "__main__":
