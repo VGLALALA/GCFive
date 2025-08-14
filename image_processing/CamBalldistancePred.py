@@ -4,8 +4,8 @@
 import json
 import os
 
-from utility.config_reader import CONFIG
 from image_processing.ballDetection import detect_golfballs as yolo_detect
+from utility.config_reader import CONFIG
 
 # -------- Calibration constants --------
 CALIB_FILE = CONFIG.get("Calibration", "calib_file", fallback="calibration.json")

@@ -6,7 +6,6 @@ from typing import Tuple
 import cv2
 import numpy as np
 
-from utility.config_reader import CONFIG
 from image_processing.ApplyGaborFilter import apply_gabor_filter_image
 from image_processing.ballDetection import get_detected_balls_info
 from image_processing.ImageCompressor import compress_image
@@ -20,6 +19,7 @@ from spin.GenerateRotationCandidate import generate_rotation_candidates
 from spin.GetRotatedImage import get_rotated_image
 from spin.GolfBall import GolfBall
 from spin.RotationSearchSpace import RotationSearchSpace
+from utility.config_reader import CONFIG
 
 COARSE_X_INC = CONFIG.getint("Spin", "coarse_x_inc", fallback=6)
 COARSE_X_START = CONFIG.getint("Spin", "coarse_x_start", fallback=-42)
