@@ -6,7 +6,6 @@ Documentation for files in `image_processing/`.
 - `CamBalldistancePred.py`: Predicts camera-to-ball distance using calibration data and detections.
 - `Convert_Canny.py`: Converts images to edges using the Canny operator.
 - `Convert_GrayScale.py`: Utility to convert images to grayscale.
-- `FormatImage.py`: Detects a ball and returns it as a `GolfBall` instance.
 - `ImageCompressor.py`: Compresses grayscale images by a scale factor.
 - `ImgComparsionOp.py`: Compares a target image against candidate rotation images.
 - `IsolateCode.py`: Crops an image around a detected golf ball.
