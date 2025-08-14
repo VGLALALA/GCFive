@@ -6,7 +6,7 @@ from typing import Any
 
 import cv2
 import numpy as np
-from flask import Flask, request, jsonify
+from flask import Flask, jsonify, request
 
 from spin.GetBallRotation import get_fine_ball_rotation
 

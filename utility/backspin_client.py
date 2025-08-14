@@ -2,9 +2,10 @@
 
 import base64
 import json
-import requests
 from pathlib import Path
 from typing import Any
+
+import requests
 
 API_URL = "https://api.ddxcr.com/backspin"  # Example HTTPS endpoint
 
