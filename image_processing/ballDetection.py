@@ -77,7 +77,6 @@ def detect_golfballs(image, conf=0.25, imgsz=640, display=True):
     return circle_data
 
 
-
 from spin.GolfBall import GolfBall
 
 

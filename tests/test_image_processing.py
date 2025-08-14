@@ -11,7 +11,6 @@ from image_processing.ImageCompressor import compress_image
 from image_processing.launchAngleCalculation import (
     calculate_launch_angle as calc_launch,
 )
-
 from image_processing.RemoveReflection import remove_reflections
 
 
@@ -47,8 +46,6 @@ def test_remove_reflections():
     filtered = orig.copy()
     out = remove_reflections(orig, filtered)
     assert out[0, 1] == 128
-
-
 
 
 def test_launch_angle_calculation():
