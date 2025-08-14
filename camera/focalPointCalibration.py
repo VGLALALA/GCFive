@@ -10,7 +10,7 @@ import cv2
 import numpy as np
 
 from camera.MVSCamera import MVSCamera
-from config_reader import CONFIG
+from utility.config_reader import CONFIG
 
 # -------- YOLO / detection --------
 YOLO_CONF = CONFIG.getfloat("YOLO", "conf", fallback=0.25)

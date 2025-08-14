@@ -6,7 +6,7 @@ from typing import Tuple
 import cv2
 import numpy as np
 
-from config_reader import CONFIG
+from utility.config_reader import CONFIG
 from image_processing.ApplyGaborFilter import apply_gabor_filter_image
 from image_processing.ballDetection import get_detected_balls_info
 from image_processing.ImageCompressor import compress_image

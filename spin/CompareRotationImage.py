@@ -2,7 +2,7 @@ from typing import Tuple
 
 import numpy as np
 
-from config_reader import CONFIG
+from utility.config_reader import CONFIG
 
 PIXEL_IGNORE_VALUE = CONFIG.getint("Spin", "pixel_ignore_value", fallback=128)
 

@@ -1,4 +1,4 @@
-import config_reader
+import utility.config_reader as config_reader
 
 
 def test_load_config_defaults():

@@ -5,7 +5,7 @@ import time
 
 import mvsdk
 
-from config_reader import CONFIG
+from utility.config_reader import CONFIG
 
 ROI_W = CONFIG.getint("Camera", "roi_w", fallback=640)
 ROI_H = CONFIG.getint("Camera", "roi_h", fallback=280)

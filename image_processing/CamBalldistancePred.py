@@ -4,7 +4,7 @@
 import json
 import os
 
-from config_reader import CONFIG
+from utility.config_reader import CONFIG
 from image_processing.ballDetection import detect_golfballs as yolo_detect
 
 # -------- Calibration constants --------
