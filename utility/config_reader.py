@@ -9,10 +9,8 @@ def load_config(path: str | None = None) -> configparser.ConfigParser:
     if path:
         cfg_path = Path(path)
     else:
-        # Look for config.cfg in the data directory relative to the project root
-        project_root = Path(__file__).parent.parent
-        cfg_path = project_root / "data" / "config.cfg"
-    
+        # Default to the repository's data/config.cfg when no path is provided
+        cfg_path = Path(__file__).resolve().parents[1] / "data" / "config.cfg"
     parser.read(cfg_path)
     return parser
 
