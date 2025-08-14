@@ -13,7 +13,7 @@ from image_processing.ballDetectionyolo import (  # Import YOLO detection functi
 
 BALL_DIAM_MM = 42.67
 GOLF_BALL_RADIUS_MM = 21.335
-THRESHOLD_APART_MM = 50.0  # Minimum distance in mm for capture pairing
+THRESHOLD_APART_MM = 80.0  # Target separation in mm (8 cm) for capture pairing
 DESIRED_EXPOSURE_US = 50.0
 DESIRED_ANALOG_GAIN = 1000.0
 DESIRED_GAMMA = 0.25
@@ -70,8 +70,9 @@ def acquire_frames(cam, frame_queue, stop_event):
     try:
         while not stop_event.is_set():
             try:
-                frame = cam.grab()
-                frame_queue.put((frame, time.time()))
+                frame, ts = cam.grab_with_timestamp()
+                # Copy to avoid SDK buffer reuse causing downstream comparisons to see identical data
+                frame_queue.put((frame.copy(), ts))
             except Exception as e:
                 print(f"Acquisition thread camera error: {e}")
     except Exception as e:
@@ -117,7 +118,7 @@ def process_frames(
         x2 = min(x1 + w_roi, 640)
         y2 = min(y1 + h_roi, 300)
 
-        movement_threshold = 12
+        movement_threshold = 6.2
         print("Monitoring movement in the detected area…")
 
         frame_count = 0
@@ -138,7 +139,7 @@ def process_frames(
             gray = (
                 cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                 if (not monoCamera and frame.ndim == 3)
-                else frame
+                else frame.copy()
             )
 
             # crop + resize to match original_cropped_roi
@@ -159,13 +160,15 @@ def process_frames(
                 frame_count += 1
                 elapsed = time.time() - start_time
                 fps = frame_count / elapsed if elapsed > 0 else 0.0
-                print(f"Comparison FPS: {fps:.1f}, Mean Difference: {md:.2f}")
+                # Ensure mean difference is not rounded to 0.00
+                print(f"Comparison FPS: {fps:.1f}, Mean Difference: {md:.4f}")
                 if md > movement_threshold and not is_recording:
                     print(f"Movement detected → recording {RECORD_FRAMES} frames")
                     recorded_frames = []
                     recorded_times = []
                     is_recording = True
-            prev_crop = crop
+            # Copy to decouple from any reused buffers/views
+            prev_crop = crop.copy()
 
             if is_recording:
                 recorded_frames.append(gray.copy())
@@ -212,6 +215,11 @@ def process_frames(
                 if score < best_score:
                     best_score = score
                     best_idx = idx
+
+        # Fallback: avoid selecting index 0 which would yield delta_t = 0
+        if (best_idx is None or best_idx == 0) and len(recorded_frames) > 1:
+            print("No suitable later frame found; falling back to index 1 to avoid zero delta_t.")
+            best_idx = 1
 
         if best_idx is None:
             print("No valid detection found at the desired separation.")

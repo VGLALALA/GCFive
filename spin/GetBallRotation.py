@@ -46,7 +46,8 @@ def get_fine_ball_rotation(
     ball2 = get_detected_balls_info(ball_image2)
 
     if ball1 is None or ball2 is None:
-        raise ValueError("Ball not detected in one or both images.")
+        # Return zero rotation if detection fails, allowing the pipeline to continue safely
+        return (0.0, 0.0, 0.0)
 
     # Isolate each ball into its own tight crop
     ball1img = isolate_ball(ball_image1, ball1)

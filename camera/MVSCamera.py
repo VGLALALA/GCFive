@@ -85,6 +85,37 @@ class MVSCamera:
             )
         return frame
 
+    def grab_with_timestamp(self, timeout_ms=2000):
+        pRaw, head = mvsdk.CameraGetImageBuffer(self.hCamera, timeout_ms)
+        if (self.buf is None) or (self.buf_sz != head.uBytes):
+            if self.buf:
+                mvsdk.CameraAlignFree(self.buf)
+            self.buf = mvsdk.CameraAlignMalloc(head.uBytes, 16)
+            self.buf_sz = head.uBytes
+        mvsdk.CameraImageProcess(self.hCamera, pRaw, self.buf, head)
+        if platform.system() == "Windows":
+            mvsdk.CameraFlipFrameBuffer(self.buf, head, 1)
+        mvsdk.CameraReleaseImageBuffer(self.hCamera, pRaw)
+        frame_data = (ctypes.c_ubyte * head.uBytes).from_address(self.buf)
+        if self.mono:
+            frame = np.frombuffer(frame_data, dtype=np.uint8).reshape(
+                (head.iHeight, head.iWidth)
+            )
+        else:
+            frame = np.frombuffer(frame_data, dtype=np.uint8).reshape(
+                (head.iHeight, head.iWidth, 3)
+            )
+        # uiTimeStamp unit is 0.1 ms → seconds
+        try:
+            ts_s = float(head.uiTimeStamp) / 10000.0
+            if ts_s <= 0:
+                raise ValueError("non-positive camera timestamp")
+        except Exception:
+            import time as _time
+
+            ts_s = _time.perf_counter()
+        return frame, ts_s
+
     def close(self):
         if self.buf:
             mvsdk.CameraAlignFree(self.buf)

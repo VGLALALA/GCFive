@@ -104,17 +104,24 @@ from spin.GolfBall import GolfBall
 
 def get_detected_balls_info(image, conf=0.25, imgsz=640):
     """
-    Run YOLO on an image and return a list of GolfBall objects.
+    Detect a golf ball and return a single GolfBall object, or None if not found.
     """
     if len(image.shape) == 2 or image.shape[2] != 3:
         image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+
+    if model is None:
+        return None
+
     results = model.predict(source=image, conf=conf, imgsz=imgsz, verbose=False)
     if not results:
-        return []
+        return None
 
     boxes = results[0].boxes
+    if boxes is None or len(boxes) == 0:
+        return None
 
     for box in boxes:
+        # Skip non-golf-ball classes
         if hasattr(box, "cls") and int(box.cls.item()) != CLASS_ID:
             continue
         x_min, y_min, x_max, y_max = box.xyxy.cpu().numpy().astype(int).flatten()
@@ -122,12 +129,12 @@ def get_detected_balls_info(image, conf=0.25, imgsz=640):
         radius = int((width + height) / 4)  # avg of (width/2, height/2)
         x_center, y_center = x_min + width // 2, y_min + height // 2
 
-        # Create a GolfBall object
-        golf_ball = GolfBall(
+        return GolfBall(
             x=x_center,
             y=y_center,
             measured_radius_pixels=radius,
-            angles_camera_ortho_perspective=(0.0, 0.0, 0.0),  # Default values
+            angles_camera_ortho_perspective=(0.0, 0.0, 0.0),
         )
 
-    return golf_ball
+    # No matching class found
+    return None

@@ -43,8 +43,10 @@ def calculate_ball_speed(
     # Convert to mm then to meters
     dist_m = (px_dist * mm_per_px) / 1000.0
 
-    # Speed in m/s
-    speed_m_per_s = dist_m / delta_t
+    # Speed in m/s (guard against zero/negative delta_t)
+    if delta_t is None or delta_t <= 0:
+        raise ValueError(f"Invalid delta_t: {delta_t}. It must be positive and non-zero.")
+    speed_m_per_s = dist_m / max(delta_t, 1e-6)
 
     if return_mph:
         speed_mph = speed_m_per_s * 2.2369362920544
