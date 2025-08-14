@@ -1,6 +1,6 @@
 import os
 import sqlite3
-from typing import Dict, Any
+from typing import Any, Dict
 
 
 def _ensure_parent_dir(path: str) -> None:
@@ -62,4 +62,3 @@ def insert_shot_record(db_path: str, record: Dict[str, Any]) -> None:
             """,
             record,
         )
-

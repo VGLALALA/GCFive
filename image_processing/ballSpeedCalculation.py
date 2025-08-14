@@ -45,7 +45,9 @@ def calculate_ball_speed(
 
     # Speed in m/s (guard against zero/negative delta_t)
     if delta_t is None or delta_t <= 0:
-        raise ValueError(f"Invalid delta_t: {delta_t}. It must be positive and non-zero.")
+        raise ValueError(
+            f"Invalid delta_t: {delta_t}. It must be positive and non-zero."
+        )
     speed_m_per_s = dist_m / max(delta_t, 1e-6)
 
     if return_mph:

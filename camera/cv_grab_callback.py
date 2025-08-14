@@ -218,7 +218,9 @@ def process_frames(
 
         # Fallback: avoid selecting index 0 which would yield delta_t = 0
         if (best_idx is None or best_idx == 0) and len(recorded_frames) > 1:
-            print("No suitable later frame found; falling back to index 1 to avoid zero delta_t.")
+            print(
+                "No suitable later frame found; falling back to index 1 to avoid zero delta_t."
+            )
             best_idx = 1
 
         if best_idx is None:

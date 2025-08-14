@@ -1,8 +1,7 @@
 # coding=utf-8
+import json
 import math
 import os
-import json
-import numpy as np
 import queue
 import threading
 import time
@@ -25,8 +24,8 @@ from spin.GetBallRotation import get_fine_ball_rotation
 from spin.GetLaunchAngle import calculate_launch_angle
 from spin.spinAxis import calculate_spin_axis
 from spin.Vector2RPM import calculate_spin_components
-from trajectory_simulation.flightDataCalculation import get_trajectory_metrics
 from storage.database import init_db, insert_shot_record
+from trajectory_simulation.flightDataCalculation import get_trajectory_metrics
 
 YOLO_CONF = CONFIG.getfloat("YOLO", "conf", fallback=0.25)
 YOLO_IMGSZ = CONFIG.getint("YOLO", "imgsz", fallback=640)
@@ -167,15 +166,21 @@ def main():
         stop_event.set()
         acquire_thread.join()
         frame_queue.put((None, None))
-        process_thread.join() 
+        process_thread.join()
 
         # Retrieve the initial and best match frames and their timestamps
         initial_frame, best_match_frame, initial_ts, best_ts = (
             cv_grab_callback.retriveData()
         )
-        delta_t = (best_ts - initial_ts) if (best_ts is not None and initial_ts is not None) else 0.0
+        delta_t = (
+            (best_ts - initial_ts)
+            if (best_ts is not None and initial_ts is not None)
+            else 0.0
+        )
         if delta_t <= 0:
-            print(f"Warning: non-positive delta_t ({delta_t}). Attempting fallback using acquisition order.")
+            print(
+                f"Warning: non-positive delta_t ({delta_t}). Attempting fallback using acquisition order."
+            )
             # As a fallback, assume uniform spacing and approximate with small positive dt
             # Use a conservative small dt to avoid divide-by-zero; user should improve timestamping
             delta_t = max(delta_t, 1e-6)
@@ -190,9 +195,7 @@ def main():
                 initial_path = os.path.join(
                     images_dir, f"initial_{initial_ts:.6f}s.png"
                 )
-                best_path = os.path.join(
-                    images_dir, f"best_{best_ts:.6f}s.png"
-                )
+                best_path = os.path.join(images_dir, f"best_{best_ts:.6f}s.png")
                 cv2.imwrite(initial_path, initial_frame)
                 cv2.imwrite(best_path, best_match_frame)
                 print(f"Saved frames to: {initial_path} and {best_path}")
@@ -245,12 +248,14 @@ def main():
     try:
         db_path = os.path.join("data", "shots.db")
         init_db(db_path)
+
         def _json_default(obj):
             if isinstance(obj, np.ndarray):
                 return obj.tolist()
             if isinstance(obj, (np.floating, np.integer)):
                 return obj.item()
             return str(obj)
+
         record = {
             "initial_ts": float(initial_ts) if initial_ts is not None else None,
             "best_ts": float(best_ts) if best_ts is not None else None,
@@ -267,8 +272,8 @@ def main():
             "apex_ft": float(apex),
             "flight_time_s": float(hangtime),
             "descending_angle_deg": float(desc_angle),
-            "initial_img_path": initial_path if 'initial_path' in locals() else None,
-            "best_img_path": best_path if 'best_path' in locals() else None,
+            "initial_img_path": initial_path if "initial_path" in locals() else None,
+            "best_img_path": best_path if "best_path" in locals() else None,
             "positions_json": json.dumps(postitions, default=_json_default),
         }
         insert_shot_record(db_path, record)
