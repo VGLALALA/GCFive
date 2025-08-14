@@ -2,7 +2,7 @@
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg) ![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.11-blue)
 
-**GCFive** is a high‑speed golf ball capture and analysis toolkit. It provides utilities for capturing high‑speed camera frames of a golf ball, extracting its spin from consecutive images, and simulating the resulting trajectory. The codebase grew out of experimentation with a HuaTeng industrial camera and the physics model from the open‑source JaySimG project. The repository is organised as a standalone Python package accompanied by helper scripts and Jupyter notebooks.
+**GCFive** is a high‑speed golf ball capture and analysis toolkit. It provides utilities for capturing high‑speed camera frames of a golf ball, extracting its spin from consecutive images, and simulating the resulting trajectory. The codebase grew out of experimentation with a HuaTeng industrial camera and the physics model from the open‑source JaySimG project.
 
 ## Table of Contents
 - [Features](#features)
